@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Client Dashboard | ARC Infinity Lab</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body class="client-dashboard-page">
+    <header>
+        <nav>
+            <div class="logo">
+                <img src="image/ARC - New Logo Rec.jpeg" alt="ARC Infinity Lab Logo" class="logo-image">
+                <div class="logo-text">
+                    <div class="logo-title">
+                        <span class="logo-arc">ARC</span>
+                        <span class="logo-infinity">Infinity <span class="logo-lab">Lab</span></span>
+                    </div>
+                    <span class="logo-slogan">A Hub for Material Testing</span>
+                </div>
+            </div>
+            <ul class="nav-links">
+                <li><a href="index.html#home">Home</a></li>
+                <li><a href="index.html#about">About</a></li>
+                <li><a href="index.html#services">Services</a></li>
+                <li><a href="index.html#gallery">Gallery</a></li>
+                <li><a href="index.html#contact">Contact</a></li>
+                <li><a href="careers.html">Careers</a></li>
+                <li><a href="records.html">Records</a></li>
+                <li><a href="employee-portal.html">Employee Portal</a></li>
+                <li class="mobile-login"><a href="login.html" class="mobile-login-button">Login</a></li>
+            </ul>
+            <div class="menu-toggle">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+        </nav>
+    </header>
+
+    <main class="dashboard-main">
+        <section class="dashboard-hero">
+            <div>
+                <h1>Client Dashboard</h1>
+                <p>Access your testing records, download finalized reports, and stay aligned with ARC Infinity Lab.</p>
+                <p class="dashboard-user" id="dashboard-user-email">Checking account...</p>
+            </div>
+            <button class="ghost-button" id="dashboard-logout-btn" type="button">Logout</button>
+        </section>
+
+        <section class="dashboard-content">
+            <div class="dashboard-card">
+                <h2>Your Testing Activity</h2>
+                <p>Use the quick actions below to review the latest updates.</p>
+                <div class="dashboard-actions">
+                    <a class="cta-button" href="records.html">View Record of Testing</a>
+                    <a class="secondary-button" href="mailto:enquiry@arcinfinitylab.com?subject=Support%20Request">Need Support?</a>
+                </div>
+            </div>
+
+            <div class="dashboard-card">
+                <h2>Latest Announcements</h2>
+                <ul class="dashboard-list">
+                    <li>📄 New PDF reports sync every hour once uploaded by our lab.</li>
+                    <li>🔒 Your access is restricted to invited accounts; contact our team for new seats.</li>
+                    <li>📬 Prefer email summaries? Let us know and we'll add you to the digest.</li>
+                </ul>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <div class="footer-content">
+            <div class="footer-section">
+                <h3>ARC Infinity Lab</h3>
+                <p>NABL Accredited Testing Laboratory for Building Materials.</p>
+            </div>
+            <div class="footer-section">
+                <h3>Contact</h3>
+                <ul>
+                    <li>Email: enquiry@arcinfinitylab.com</li>
+                    <li>Phone: <a href="tel:+919699299955">+91 96992 99955</a></li>
+                    <li>Location: Mumbai, India</li>
+                </ul>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; <span id="year"></span> ARC Infinity Lab Pvt. Ltd. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>

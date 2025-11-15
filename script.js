@@ -2,6 +2,46 @@
 const menuToggle = document.querySelector('.menu-toggle');
 const navLinks = document.querySelector('.nav-links');
 
+const CUSTOMER_PROFILE_KEY = 'arc_customer_profile';
+const EMPLOYEE_PROFILE_KEY = 'arc_employee_profile';
+const CLIENTS_TABLE_KEY = 'arc_clients_table';
+const TESTS_TABLE_KEY = 'arc_tests_table';
+const REPORT_UPLOAD_KEY = 'arc_report_uploads';
+
+const safeJSONParse = (value, fallback = null) => {
+    try {
+        return value ? JSON.parse(value) : fallback;
+    } catch (error) {
+        console.warn('Unable to parse stored data', error);
+        return fallback;
+    }
+};
+
+const readStoredJSON = (key, fallback = null) => {
+    try {
+        const raw = localStorage.getItem(key);
+        return safeJSONParse(raw, fallback);
+    } catch {
+        return fallback;
+    }
+};
+
+const writeStoredJSON = (key, value) => {
+    try {
+        localStorage.setItem(key, JSON.stringify(value));
+    } catch (error) {
+        console.warn('Unable to persist data', error);
+    }
+};
+
+const formatNameFromEmail = (email) => {
+    if (!email) return 'ARC Client';
+    const base = email.split('@')[0] || email;
+    return base.replace(/[._]/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+};
+
+const normalizeTestRef = (ref) => (ref || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+
 menuToggle.addEventListener('click', () => {
     menuToggle.classList.toggle('active');
     navLinks.classList.toggle('active');
@@ -126,70 +166,477 @@ if (loginTabs.length && loginCards.length) {
     });
 }
 
-const loginForm = document.querySelector('[data-login-form]');
-if (loginForm) {
-    const loginFeedback = loginForm.querySelector('[data-login-feedback]');
-    const submitButton = loginForm.querySelector('button[type="submit"]');
+const loginForms = document.querySelectorAll('[data-login-form]');
+if (loginForms.length) {
+    loginForms.forEach((form) => {
+        const loginFeedback = form.querySelector('[data-login-feedback]');
+        const submitButton = form.querySelector('button[type="submit"]');
+        const role = form.dataset.loginForm || 'customer';
+        const redirectTarget = form.dataset.redirect || 'index.html#home';
 
-    const setLoginFeedback = (status, message) => {
-        if (!loginFeedback) return;
-        loginFeedback.textContent = message || '';
-        loginFeedback.classList.remove('success', 'error');
-        if (status && status !== 'info') {
-            loginFeedback.classList.add(status);
+        const setLoginFeedback = (status, message) => {
+            if (!loginFeedback) return;
+            loginFeedback.textContent = message || '';
+            loginFeedback.classList.remove('success', 'error');
+            if (status && status !== 'info') {
+                loginFeedback.classList.add(status);
+            }
+        };
+
+        form.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const emailInput = form.querySelector('input[type="email"]');
+            const userIdInput = form.querySelector('[data-user-id-input]');
+            const passwordInput = form.querySelector('input[type="password"]');
+            if (!userIdInput) return;
+
+            const email = emailInput ? emailInput.value.trim() : '';
+            const userId = userIdInput.value.trim();
+            const password = passwordInput ? passwordInput.value : '';
+
+            if (!userId) {
+                setLoginFeedback('error', 'Please enter your user ID.');
+                return;
+            }
+
+            if (emailInput && !email) {
+                setLoginFeedback('error', 'Please enter your email.');
+                return;
+            }
+
+            if (passwordInput && !password) {
+                setLoginFeedback('error', 'Please enter your password.');
+                return;
+            }
+
+            setLoginFeedback('info', 'Signing you in...');
+            if (submitButton) {
+                submitButton.disabled = true;
+                submitButton.textContent = 'Signing in...';
+            }
+
+            try {
+                const payload = {
+                    role,
+                    userId,
+                    password: password || userId,
+                };
+                if (email) {
+                    payload.email = email;
+                }
+
+                const response = await fetch('/.netlify/functions/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(payload),
+                });
+
+                const result = await response.json().catch(() => ({}));
+                if (!response.ok) {
+                    throw new Error(result.message || 'Unable to sign in.');
+                }
+
+                if (result.token) {
+                    localStorage.setItem('arc_session', result.token);
+                }
+
+                const profileKey = role === 'employee' ? EMPLOYEE_PROFILE_KEY : CUSTOMER_PROFILE_KEY;
+                writeStoredJSON(profileKey, {
+                    email: email || '',
+                    userId,
+                    name: email ? formatNameFromEmail(email) : userId,
+                    role,
+                    lastLogin: new Date().toISOString(),
+                });
+
+                setLoginFeedback('success', 'Login successful! Redirecting...');
+                setTimeout(() => {
+                    window.location.href = redirectTarget;
+                }, 1200);
+            } catch (error) {
+                console.error('Login failed:', error);
+                setLoginFeedback('error', error.message || 'Login failed. Please try again.');
+            } finally {
+                if (submitButton) {
+                    submitButton.disabled = false;
+                    submitButton.textContent = 'Login';
+                }
+            }
+        });
+    });
+}
+
+const STORAGE_KEY_MAP = {
+    clients: CLIENTS_TABLE_KEY,
+    tests: TESTS_TABLE_KEY,
+};
+
+const defaultRecordSet = [
+    {
+        testRef: 'ARC/TR/2025/001',
+        jobNo: 'JOB-7842',
+        dateReceived: '10-Jan-2025',
+        material: 'Concrete Cube',
+        testParameter: 'Compressive Strength',
+        sampleId: 'C-101',
+        grade: 'M40',
+        castingDate: '05-Jan-2025',
+        age: '7 days',
+        testingDate: '12-Jan-2025',
+        expectedDate: '13-Jan-2025',
+        report: 'ARC_TR_2025_001.pdf',
+    },
+    {
+        testRef: 'ARC/TR/2025/014',
+        jobNo: 'JOB-7920',
+        dateReceived: '08-Jan-2025',
+        material: 'Steel Bar',
+        testParameter: 'Tensile Strength',
+        sampleId: 'S-210',
+        grade: 'Fe500',
+        castingDate: '30-Dec-2024',
+        age: '14 days',
+        testingDate: '13-Jan-2025',
+        expectedDate: '15-Jan-2025',
+        report: '',
+    }
+];
+
+const serializeTableBody = (tbody) => {
+    const rows = Array.from(tbody.querySelectorAll('tr'));
+    return rows
+        .map((row) =>
+            Array.from(row.children).map((cell) =>
+                (cell.textContent || '').replace(/\u00a0/g, ' ').trim()
+            )
+        )
+        .filter((row) => row.some((cell) => cell));
+};
+
+const renderRowsToTable = (tbody, rows) => {
+    if (!Array.isArray(rows)) return;
+    tbody.innerHTML = '';
+    rows.forEach((row) => {
+        const tr = document.createElement('tr');
+        row.forEach((cellValue) => {
+            const td = document.createElement('td');
+            td.textContent = cellValue || '';
+            tr.appendChild(td);
+        });
+        tbody.appendChild(tr);
+    });
+};
+
+const hydrateEditableTables = () => {
+    const tableBodies = document.querySelectorAll('[data-table-body]');
+    tableBodies.forEach((tbody) => {
+        const keyName = STORAGE_KEY_MAP[tbody.dataset.storageKey];
+        if (!keyName) return;
+
+        const storedRows = readStoredJSON(keyName, []);
+        if (Array.isArray(storedRows) && storedRows.length) {
+            renderRowsToTable(tbody, storedRows);
         }
+
+        let saveTimer;
+        const scheduleSave = () => {
+            clearTimeout(saveTimer);
+            saveTimer = setTimeout(() => {
+                const data = serializeTableBody(tbody);
+                writeStoredJSON(keyName, data);
+            }, 300);
+        };
+
+        ['input', 'paste', 'blur'].forEach((evt) => {
+            tbody.addEventListener(evt, scheduleSave);
+        });
+    });
+};
+
+hydrateEditableTables();
+
+const customerSummary = document.querySelector('[data-customer-summary]');
+const recordsTableBody = document.querySelector('[data-records-body]');
+let activeRecordData = [];
+
+const mapRowToRecord = (row) => ({
+    testRef: row[0] || 'Pending',
+    jobNo: row[1] || '—',
+    dateReceived: row[2] || '—',
+    material: row[3] || '—',
+    testParameter: row[4] || '—',
+    sampleId: row[5] || '—',
+    grade: row[6] || '—',
+    castingDate: row[7] || '—',
+    age: row[8] || '—',
+    testingDate: row[9] || '—',
+    expectedDate: row[10] || '—',
+});
+
+const renderRecordsTable = (records, uploads) => {
+    if (!recordsTableBody) return;
+    const uploadMap = new Map();
+    uploads.forEach((upload) => {
+        if (upload.testRef) {
+            uploadMap.set(normalizeTestRef(upload.testRef), upload);
+        }
+    });
+
+    recordsTableBody.innerHTML = '';
+    records.forEach((record) => {
+        const upload = uploadMap.get(normalizeTestRef(record.testRef));
+        const tr = document.createElement('tr');
+        const cells = [
+            record.testRef,
+            record.jobNo,
+            record.dateReceived,
+            record.material,
+            record.testParameter,
+            record.sampleId,
+            record.grade,
+            record.castingDate,
+            record.age,
+            record.testingDate,
+            record.expectedDate,
+        ];
+
+        cells.forEach((value) => {
+            const td = document.createElement('td');
+            td.textContent = value;
+            tr.appendChild(td);
+        });
+
+        const reportCell = document.createElement('td');
+        if (upload && upload.fileName) {
+            const link = document.createElement('a');
+            link.href = upload.downloadUrl || '#';
+            link.textContent = upload.fileName;
+            link.className = 'report-link';
+            link.setAttribute('target', '_blank');
+            reportCell.appendChild(link);
+        } else if (record.report) {
+            const link = document.createElement('a');
+            link.href = '#';
+            link.textContent = record.report;
+            link.className = 'report-link';
+            reportCell.appendChild(link);
+        } else {
+            const badge = document.createElement('span');
+            badge.className = 'status-pill pending';
+            badge.textContent = 'Pending';
+            reportCell.appendChild(badge);
+        }
+        tr.appendChild(reportCell);
+        recordsTableBody.appendChild(tr);
+    });
+};
+
+const exportRecordsToCSV = (records, uploads) => {
+    if (!records.length) return;
+    const uploadMap = new Map();
+    uploads.forEach((upload) => {
+        uploadMap.set(normalizeTestRef(upload.testRef), upload.fileName || '');
+    });
+
+    const headers = [
+        'Test Ref. No.',
+        'Job No.',
+        'Date Sample Received',
+        'Material',
+        'Test Parameter',
+        'ID',
+        'Grade',
+        'Date of Casting',
+        'Age',
+        'Testing Date',
+        'Expected Result Date',
+        'Report File',
+    ];
+
+    const rows = records.map((record) => [
+        record.testRef,
+        record.jobNo,
+        record.dateReceived,
+        record.material,
+        record.testParameter,
+        record.sampleId,
+        record.grade,
+        record.castingDate,
+        record.age,
+        record.testingDate,
+        record.expectedDate,
+        uploadMap.get(normalizeTestRef(record.testRef)) || record.report || 'Pending',
+    ]);
+
+    const csvContent = [headers, ...rows]
+        .map((row) =>
+            row
+                .map((value) => `"${(value || '').replace(/"/g, '""')}"`)
+                .join(',')
+        )
+        .join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'arc-testing-records.csv';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+};
+
+if (recordsTableBody) {
+    const profile = readStoredJSON(CUSTOMER_PROFILE_KEY, null);
+    if (profile && customerSummary) {
+        const fields = {
+            name: profile.name || profile.clientName,
+            project: profile.project || 'Material Compliance Program',
+            location: profile.location || 'Mumbai, India',
+            contact: profile.email || profile.userId,
+            access: profile.userId || (profile.email ? profile.email.split('@')[0] : 'ARC-CLIENT'),
+        };
+        Object.entries(fields).forEach(([field, value]) => {
+            const el = customerSummary.querySelector(`[data-field="${field}"]`);
+            if (el && value) {
+                el.textContent = value;
+            }
+        });
+    }
+
+    const storedTests = readStoredJSON(TESTS_TABLE_KEY, []);
+    const uploads = readStoredJSON(REPORT_UPLOAD_KEY, []);
+    const records =
+        Array.isArray(storedTests) && storedTests.length
+            ? storedTests.map(mapRowToRecord)
+            : defaultRecordSet;
+
+    activeRecordData = records;
+    renderRecordsTable(records, uploads || []);
+
+    const downloadButton = document.querySelector('[data-download-records]');
+    if (downloadButton) {
+        downloadButton.addEventListener('click', () => {
+            exportRecordsToCSV(activeRecordData, uploads || []);
+        });
+    }
+}
+
+const addRowButtons = document.querySelectorAll('[data-add-row]');
+addRowButtons.forEach((button) => {
+    const targetSelector = button.dataset.target;
+    const tbody = targetSelector ? document.querySelector(targetSelector) : null;
+    if (!tbody) return;
+
+    button.addEventListener('click', () => {
+        const table = tbody.closest('table');
+        const columnCount = table ? table.querySelectorAll('thead th').length : tbody.firstElementChild?.children.length || 1;
+        const tr = document.createElement('tr');
+        for (let i = 0; i < columnCount; i += 1) {
+            const td = document.createElement('td');
+            td.innerHTML = '&nbsp;';
+            tr.appendChild(td);
+        }
+        tbody.appendChild(tr);
+        tr.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    });
+});
+
+const collectRefsFromTable = (tbody, columnIndex = 0) => {
+    if (!tbody) return new Set();
+    const refs = new Set();
+    Array.from(tbody.querySelectorAll('tr')).forEach((row) => {
+        const cell = row.children[columnIndex];
+        if (cell) {
+            const ref = normalizeTestRef(cell.textContent);
+            if (ref) {
+                refs.add(ref);
+            }
+        }
+    });
+    return refs;
+};
+
+const uploadInput = document.querySelector('[data-document-upload]');
+if (uploadInput) {
+    const uploadFeedback = document.querySelector('[data-upload-feedback]');
+    const uploadList = document.querySelector('[data-upload-list]');
+
+    const renderUploads = (uploads) => {
+        if (!uploadList) return;
+        uploadList.innerHTML = '';
+        uploads.forEach((upload) => {
+            const li = document.createElement('li');
+            li.className = upload.testRef ? 'success' : 'error';
+            const nameSpan = document.createElement('span');
+            nameSpan.textContent = upload.fileName;
+            const refSpan = document.createElement('span');
+            refSpan.textContent = upload.testRef || 'No Test Ref Match';
+            li.appendChild(nameSpan);
+            li.appendChild(refSpan);
+            uploadList.appendChild(li);
+        });
     };
 
-    loginForm.addEventListener('submit', async (event) => {
-        event.preventDefault();
-        const emailInput = loginForm.querySelector('#customer-email');
-        const passwordInput = loginForm.querySelector('#customer-password');
-        if (!emailInput || !passwordInput) return;
+    const existingUploads = readStoredJSON(REPORT_UPLOAD_KEY, []);
+    renderUploads(existingUploads || []);
 
-        const email = emailInput.value.trim();
-        const password = passwordInput.value;
-        if (!email || !password) {
-            setLoginFeedback('error', 'Please enter your email and password.');
-            return;
-        }
+    uploadInput.addEventListener('change', (event) => {
+        const files = Array.from(event.target.files || []);
+        if (!files.length) return;
 
-        setLoginFeedback('info', 'Signing you in...');
-        if (submitButton) {
-            submitButton.disabled = true;
-            submitButton.textContent = 'Signing in...';
-        }
+        const clientRefs = collectRefsFromTable(document.querySelector('#client-table-body'), 4);
+        const testRefs = collectRefsFromTable(document.querySelector('#test-table-body'), 0);
+        const validRefs = new Set([...testRefs].filter((ref) => clientRefs.has(ref)));
+        const uploads = readStoredJSON(REPORT_UPLOAD_KEY, []) || [];
+        const newUploads = [];
+        const unmatched = [];
 
-        try {
-            const response = await fetch('/.netlify/functions/login', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ email, password }),
+        files.forEach((file) => {
+            const upperName = file.name.toUpperCase();
+            let matchedRef = null;
+            validRefs.forEach((ref) => {
+                if (!matchedRef && upperName.includes(ref)) {
+                    matchedRef = ref;
+                }
             });
 
-            const result = await response.json().catch(() => ({}));
-            if (!response.ok) {
-                throw new Error(result.message || 'Unable to sign in.');
+            if (matchedRef) {
+                newUploads.push({
+                    fileName: file.name,
+                    testRef: matchedRef,
+                    uploadedAt: new Date().toISOString(),
+                });
+            } else {
+                unmatched.push(file.name);
             }
+        });
 
-            if (result.token) {
-                localStorage.setItem('arc_session', result.token);
-            }
-
-            setLoginFeedback('success', 'Login successful! Redirecting...');
-            setTimeout(() => {
-                window.location.href = 'index.html#home';
-            }, 1200);
-        } catch (error) {
-            console.error('Login failed:', error);
-            setLoginFeedback('error', error.message || 'Login failed. Please try again.');
-        } finally {
-            if (submitButton) {
-                submitButton.disabled = false;
-                submitButton.textContent = 'Login';
+        if (newUploads.length) {
+            const merged = [
+                ...uploads.filter(
+                    (upload) =>
+                        !newUploads.some(
+                            (fresh) => normalizeTestRef(fresh.testRef) === normalizeTestRef(upload.testRef)
+                        )
+                ),
+                ...newUploads,
+            ];
+            writeStoredJSON(REPORT_UPLOAD_KEY, merged);
+            renderUploads(merged);
+            if (uploadFeedback) {
+                uploadFeedback.textContent = `${newUploads.length} file(s) linked to testing records.`;
             }
         }
+
+        if (unmatched.length && uploadFeedback) {
+            uploadFeedback.textContent = `Unmatched file names: ${unmatched.join(', ')}. Include the Test Ref. No. in each file name.`;
+        }
+
+        uploadInput.value = '';
     });
 }
 
@@ -412,6 +859,105 @@ document.querySelectorAll('.service-card').forEach(card => {
         card.style.borderLeft = 'none';
     });
 });
+
+const initNetlifyIdentityWidget = () => {
+    if (typeof window === 'undefined' || !window.netlifyIdentity) {
+        return;
+    }
+
+    const loginBtn = document.getElementById('identity-login-btn');
+    const logoutBtn = document.getElementById('identity-logout-btn');
+    const dashboardBtn = document.getElementById('identity-dashboard-btn');
+    const loggedInfo = document.getElementById('identity-logged-info');
+    const userEmail = document.getElementById('identity-user-email');
+    const dashboardLogoutBtn = document.getElementById('dashboard-logout-btn');
+    const dashboardUserEmail = document.getElementById('dashboard-user-email');
+
+    const updatePortalUI = (user) => {
+        if (loggedInfo) {
+            if (user) {
+                loggedInfo.classList.add('active');
+                if (userEmail) {
+                    userEmail.textContent = `Logged in as: ${user.email}`;
+                }
+                if (loginBtn) {
+                    loginBtn.style.display = 'none';
+                }
+            } else {
+                loggedInfo.classList.remove('active');
+                if (loginBtn) {
+                    loginBtn.style.display = 'inline-flex';
+                }
+            }
+        }
+
+        if (dashboardUserEmail) {
+            dashboardUserEmail.textContent = user
+                ? `Logged in as: ${user.email}`
+                : 'Checking account...';
+        }
+    };
+
+    const guardDashboard = (user) => {
+        const onDashboard = window.location.pathname.endsWith('/client-dashboard.html');
+        if (onDashboard && !user) {
+            window.location.href = '/';
+        }
+    };
+
+    netlifyIdentity.on('init', (user) => {
+        updatePortalUI(user);
+        guardDashboard(user);
+    });
+
+    netlifyIdentity.on('login', (user) => {
+        updatePortalUI(user);
+        if (!window.location.pathname.endsWith('/client-dashboard.html')) {
+            window.location.href = '/client-dashboard.html';
+        }
+    });
+
+    netlifyIdentity.on('logout', () => {
+        updatePortalUI(null);
+        if (window.location.pathname.endsWith('/client-dashboard.html')) {
+            window.location.href = '/';
+        }
+    });
+
+    if (loginBtn) {
+        loginBtn.addEventListener('click', () => {
+            netlifyIdentity.open('login');
+        });
+    }
+
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', () => {
+            netlifyIdentity.logout();
+        });
+    }
+
+    if (dashboardBtn) {
+        dashboardBtn.addEventListener('click', () => {
+            window.location.href = '/client-dashboard.html';
+        });
+    }
+
+    if (dashboardLogoutBtn) {
+        dashboardLogoutBtn.addEventListener('click', () => {
+            netlifyIdentity.logout();
+        });
+    }
+
+    netlifyIdentity.init();
+};
+
+if (typeof window !== 'undefined') {
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initNetlifyIdentityWidget);
+    } else {
+        initNetlifyIdentityWidget();
+    }
+}
 
 // Validate email format
 const emailInput = document.getElementById('email');

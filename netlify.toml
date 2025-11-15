@@ -19,3 +19,10 @@
   to = "/.netlify/functions/protected"
   status = 200
   force = true
+
+[[redirects]]
+  from = "/client-dashboard.html"
+  to = "/client-dashboard.html"
+  status = 200
+  force = true
+  conditions = { Role = ["customer"] }

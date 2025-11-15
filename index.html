@@ -29,6 +29,8 @@
                 <li><a href="#gallery">Gallery</a></li>
                 <li><a href="#contact">Contact</a></li>
                 <li><a href="careers.html">Careers</a></li>
+                <li><a href="records.html">Records</a></li>
+                <li><a href="employee-portal.html">Employee Portal</a></li>
                 <li class="mobile-login"><a href="login.html" class="mobile-login-button">Login</a></li>
             </ul>
             <div class="menu-toggle">
@@ -48,6 +50,25 @@
             <a href="#services" class="cta-button">Explore Our Services</a>
         </div>
         <div class="scroll-indicator"></div>
+    </section>
+
+    <section class="client-portal" id="portal">
+        <div class="client-portal-card">
+            <div>
+                <h2>Client Portal Access</h2>
+                <p>Existing customers can log in using Netlify Identity. Once authenticated, you can jump straight to your testing dashboard.</p>
+            </div>
+            <div class="client-portal-actions">
+                <button id="identity-login-btn" class="cta-button">Login</button>
+                <div id="identity-logged-info" class="identity-info" aria-live="polite">
+                    <p id="identity-user-email"></p>
+                    <div class="identity-buttons">
+                        <button id="identity-dashboard-btn" class="secondary-button" type="button">Go to Dashboard</button>
+                        <button id="identity-logout-btn" class="ghost-button" type="button">Logout</button>
+                    </div>
+                </div>
+            </div>
+        </div>
     </section>
 
     <!-- Highlights Section -->
@@ -342,6 +363,7 @@
     </footer>
 
     <!-- External JS -->
+    <script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
     <script src="script.js"></script>
 </body>
 </html>

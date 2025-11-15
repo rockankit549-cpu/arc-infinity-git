@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Employee Operations | ARC Infinity Lab</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body class="employee-portal">
+    <header>
+        <nav>
+            <div class="logo">
+                <img src="image/ARC - New Logo Rec.jpeg" alt="ARC Infinity Lab Logo" class="logo-image">
+                <div class="logo-text">
+                    <div class="logo-title">
+                        <span class="logo-arc">ARC</span>
+                        <span class="logo-infinity">Infinity <span class="logo-lab">Lab</span></span>
+                    </div>
+                    <span class="logo-slogan">A Hub for Material Testing</span>
+                </div>
+            </div>
+            <ul class="nav-links">
+                <li><a href="index.html#home">Home</a></li>
+                <li><a href="index.html#about">About</a></li>
+                <li><a href="index.html#services">Services</a></li>
+                <li><a href="index.html#gallery">Gallery</a></li>
+                <li><a href="index.html#contact">Contact</a></li>
+                <li><a href="careers.html">Careers</a></li>
+                <li><a href="records.html">Records</a></li>
+                <li><a href="employee-portal.html" class="active">Employee Portal</a></li>
+                <li class="mobile-login"><a href="login.html" class="mobile-login-button">Login</a></li>
+            </ul>
+            <div class="menu-toggle">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+        </nav>
+    </header>
+
+    <main class="employee-main">
+        <section class="employee-hero">
+            <div>
+                <h1>Testing Operations Workspace</h1>
+                <p>Update client profiles, paste planning data directly from Excel, and upload test reports so every customer can see the latest record of testing.</p>
+            </div>
+            <div class="hero-actions">
+                <button class="cta-button" data-add-row data-target="#client-table-body">Add Client Row</button>
+                <button class="secondary-button" data-add-row data-target="#test-table-body">Add Test Row</button>
+            </div>
+        </section>
+
+        <section class="employee-section">
+            <div class="section-heading">
+                <h2>Client Details</h2>
+                <p>Copy rows from Excel (Ctrl+C) and paste directly inside the table body. Each row must include the Test Ref. No. so it can link to testing records.</p>
+            </div>
+            <div class="editable-table-wrapper">
+                <table class="editable-table">
+                    <thead>
+                        <tr>
+                            <th>Client Name</th>
+                            <th>Address</th>
+                            <th>Location</th>
+                            <th>Access Credentials</th>
+                            <th>Test Ref. No.</th>
+                        </tr>
+                    </thead>
+                    <tbody id="client-table-body" data-table-body="clients" data-storage-key="clients" contenteditable="true">
+                        <tr>
+                            <td>Arc Infra Pvt. Ltd.</td>
+                            <td>15th Floor, Skyline Avenue</td>
+                            <td>Mumbai</td>
+                            <td>client01 / ********</td>
+                            <td>ARC/TR/2025/001</td>
+                        </tr>
+                        <tr>
+                            <td>Delta Buildcon</td>
+                            <td>Plot 42, MIDC Industrial Area</td>
+                            <td>Pune</td>
+                            <td>delta07 / ********</td>
+                            <td>ARC/TR/2025/014</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <p class="table-hint">Tip: use <strong>Ctrl+V</strong> after selecting the first cell to bring in multiple Excel rows.</p>
+        </section>
+
+        <section class="employee-section">
+            <div class="section-heading">
+                <h2>Test Plan & Progress</h2>
+                <p>Maintain a single source of truth for test execution. Every Test Ref. No. listed here appears for the customer once the report is uploaded.</p>
+            </div>
+            <div class="editable-table-wrapper">
+                <table class="editable-table">
+                    <thead>
+                        <tr>
+                            <th>Test Ref. No.</th>
+                            <th>Job No.</th>
+                            <th>Date Sample Received</th>
+                            <th>Material</th>
+                            <th>Test Parameter</th>
+                            <th>ID</th>
+                            <th>Grade</th>
+                            <th>Date of Casting</th>
+                            <th>Age</th>
+                            <th>Testing Date</th>
+                            <th>Expected Result Date</th>
+                        </tr>
+                    </thead>
+                    <tbody id="test-table-body" data-table-body="tests" data-storage-key="tests" contenteditable="true">
+                        <tr>
+                            <td>ARC/TR/2025/001</td>
+                            <td>JOB-7842</td>
+                            <td>10-Jan-2025</td>
+                            <td>Concrete Cube</td>
+                            <td>Compressive Strength</td>
+                            <td>C-101</td>
+                            <td>M40</td>
+                            <td>05-Jan-2025</td>
+                            <td>7 days</td>
+                            <td>12-Jan-2025</td>
+                            <td>13-Jan-2025</td>
+                        </tr>
+                        <tr>
+                            <td>ARC/TR/2025/014</td>
+                            <td>JOB-7920</td>
+                            <td>08-Jan-2025</td>
+                            <td>Steel Bar</td>
+                            <td>Tensile Strength</td>
+                            <td>S-210</td>
+                            <td>Fe500</td>
+                            <td>30-Dec-2024</td>
+                            <td>14 days</td>
+                            <td>13-Jan-2025</td>
+                            <td>15-Jan-2025</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <p class="table-hint">Ensure every job row references a client’s Test Ref. No. and always keeps expected result dates up to date.</p>
+        </section>
+
+        <section class="employee-section">
+            <div class="section-heading">
+                <h2>Upload Test Reports</h2>
+                <p>Only PDF files are accepted. File names must include the Test Ref. No. for automatic matching with the customer-facing record of testing.</p>
+            </div>
+            <div class="upload-panel">
+                <input type="file" id="report-upload" data-document-upload accept="application/pdf" multiple>
+                <label for="report-upload" class="upload-dropzone">
+                    <span>Drag & drop or click to upload PDF reports</span>
+                    <small>Example: <strong>ARC_TR_2025_001.pdf</strong></small>
+                </label>
+                <div class="upload-feedback" data-upload-feedback>Waiting for files...</div>
+                <ul class="upload-list" data-upload-list></ul>
+            </div>
+            <p class="table-hint">Uploaded files are synced to the customer record automatically when the Test Ref. No. matches both the client entry and the test plan.</p>
+        </section>
+    </main>
+
+    <footer>
+        <div class="footer-content">
+            <div class="footer-section">
+                <h3>ARC Infinity Lab</h3>
+                <p>NABL Accredited Testing Laboratory for Building Materials.</p>
+            </div>
+            <div class="footer-section">
+                <h3>Contact</h3>
+                <ul>
+                    <li>Email: enquiry@arcinfinitylab.com</li>
+                    <li>Phone: <a href="tel:+919699299955">+91 96992 99955</a></li>
+                    <li>Location: Mumbai, India</li>
+                </ul>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; <span id="year"></span> ARC Infinity Lab Pvt. Ltd. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>

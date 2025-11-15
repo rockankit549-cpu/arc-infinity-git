@@ -26,6 +26,8 @@
                 <li><a href="index.html#gallery">Gallery</a></li>
                 <li><a href="index.html#contact">Contact</a></li>
                 <li><a href="careers.html">Careers</a></li>
+                <li><a href="records.html">Records</a></li>
+                <li><a href="employee-portal.html">Employee Portal</a></li>
                 <li class="mobile-login"><a href="login.html" class="mobile-login-button">Login</a></li>
             </ul>
             <div class="menu-toggle">
@@ -54,43 +56,39 @@
                 <div class="login-card active" data-type="customer">
                     <h2>Customer Login</h2>
                     <span>Access your dashboard, project reports, and support tools.</span>
-                    <form class="login-form" id="customer-login-form" data-login-form>
+                    <form class="login-form" id="customer-login-form" data-login-form="customer" data-redirect="records.html">
                         <div class="form-group">
-                            <label for="customer-email">Email</label>
-                            <input type="email" id="customer-email" name="customer-email" placeholder="name@example.com" autocomplete="email" required>
+                            <label for="customer-userid">User ID</label>
+                            <input type="text" id="customer-userid" name="customer-userid" placeholder="ARC-CLIENT-001" autocomplete="username" required data-user-id-input>
                         </div>
                         <div class="form-group">
                             <label for="customer-password">Password</label>
-                            <input type="password" id="customer-password" name="customer-password" placeholder="Enter your password" autocomplete="current-password" required minlength="8">
+                            <input type="password" id="customer-password" name="customer-password" placeholder="Enter your password" autocomplete="current-password" required minlength="6">
                         </div>
                         <div class="login-feedback" data-login-feedback role="status" aria-live="polite"></div>
                         <button type="submit">Login</button>
-                        <div class="login-links">
-                            <a href="#">Forgot password?</a>
-                        </div>
-                        <p class="signup-note">New to ARC Infinity Lab? <a href="#">Sign up as a customer</a></p>
+                        <p class="signup-note">Need access? <a href="mailto:onboard@arcinfinitylab.com?subject=ARC%20Infinity%20Lab%20Access%20Request">Contact our onboarding team</a></p>
                     </form>
                 </div>
 
                 <div class="login-card" data-type="employee">
                     <h2>Employee Login</h2>
                     <span>Use your ARC Infinity Lab credentials to manage internal workflows.</span>
-                    <form class="login-form">
+                    <form class="login-form" id="employee-login-form" data-login-form="employee" data-redirect="employee-portal.html">
+                        <div class="form-group">
+                            <label for="employee-email">Corporate Email</label>
+                            <input type="email" id="employee-email" name="employee-email" placeholder="employee@arcinfinitylab.com" autocomplete="email" required>
+                        </div>
                         <div class="form-group">
                             <label for="employee-userid">User ID</label>
-                            <input type="text" id="employee-userid" name="employee-userid" placeholder="Employee ID or email">
+                            <input type="text" id="employee-userid" name="employee-userid" placeholder="ARC-EMP-001" autocomplete="username" required data-user-id-input>
                         </div>
-                        <div class="form-group">
-                            <label for="employee-password">Password</label>
-                            <input type="password" id="employee-password" name="employee-password" placeholder="Enter your password">
-                        </div>
+                        <div class="login-feedback" data-login-feedback role="status" aria-live="polite"></div>
                         <button type="submit">Login</button>
-                        <div class="login-links">
-                            <a href="#">Forgot password?</a>
-                        </div>
                     </form>
                 </div>
             </div>
+
         </div>
     </main>
 

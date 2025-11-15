@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Testing Records | ARC Infinity Lab</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body class="records-page">
+    <header>
+        <nav>
+            <div class="logo">
+                <img src="image/ARC - New Logo Rec.jpeg" alt="ARC Infinity Lab Logo" class="logo-image">
+                <div class="logo-text">
+                    <div class="logo-title">
+                        <span class="logo-arc">ARC</span>
+                        <span class="logo-infinity">Infinity <span class="logo-lab">Lab</span></span>
+                    </div>
+                    <span class="logo-slogan">A Hub for Material Testing</span>
+                </div>
+            </div>
+            <ul class="nav-links">
+                <li><a href="index.html#home">Home</a></li>
+                <li><a href="index.html#about">About</a></li>
+                <li><a href="index.html#services">Services</a></li>
+                <li><a href="index.html#gallery">Gallery</a></li>
+                <li><a href="index.html#contact">Contact</a></li>
+                <li><a href="careers.html">Careers</a></li>
+                <li><a href="records.html" class="active">Records</a></li>
+                <li><a href="employee-portal.html">Employee Portal</a></li>
+                <li class="mobile-login"><a href="login.html" class="mobile-login-button">Login</a></li>
+            </ul>
+            <div class="menu-toggle">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+        </nav>
+    </header>
+
+    <main class="records-main">
+        <section class="customer-banner">
+            <div class="customer-summary" data-customer-summary>
+                <div class="summary-field">
+                    <p class="label">Client Name</p>
+                    <p class="value" data-field="name">ARC Client</p>
+                </div>
+                <div class="summary-field">
+                    <p class="label">Project</p>
+                    <p class="value" data-field="project">High-Rise Residential Tower</p>
+                </div>
+                <div class="summary-field">
+                    <p class="label">Location</p>
+                    <p class="value" data-field="location">Mumbai, India</p>
+                </div>
+                <div class="summary-field">
+                    <p class="label">Primary Contact</p>
+                    <p class="value" data-field="contact">contact@client.com</p>
+                </div>
+                <div class="summary-field">
+                    <p class="label">Access ID</p>
+                    <p class="value" data-field="access">ARC-CL-001</p>
+                </div>
+            </div>
+            <p class="summary-note">
+                Need an update? Contact your assigned project manager or call <a href="tel:+919699299955">+91 96992 99955</a>.
+            </p>
+        </section>
+
+        <section class="records-table-section">
+            <div class="section-header">
+                <div>
+                    <h1>Record of Testing</h1>
+                    <p>Track sample intake, status, and downloadable reports in one place.</p>
+                </div>
+                <button class="cta-button" type="button" data-download-records>Export CSV</button>
+            </div>
+            <div class="records-table-wrapper">
+                <table class="records-table">
+                    <thead>
+                        <tr>
+                            <th>Test Ref. No.</th>
+                            <th>Job No.</th>
+                            <th>Date Sample Received</th>
+                            <th>Material</th>
+                            <th>Test Parameter</th>
+                            <th>ID</th>
+                            <th>Grade</th>
+                            <th>Date of Casting</th>
+                            <th>Age</th>
+                            <th>Testing Date</th>
+                            <th>Expected Result Date</th>
+                            <th>Test Report (PDF)</th>
+                        </tr>
+                    </thead>
+                    <tbody data-records-body>
+                        <tr>
+                            <td>ARC/TR/2025/001</td>
+                            <td>JOB-7842</td>
+                            <td>10-Jan-2025</td>
+                            <td>Concrete Cube</td>
+                            <td>Compressive Strength</td>
+                            <td>C-101</td>
+                            <td>M40</td>
+                            <td>05-Jan-2025</td>
+                            <td>7 days</td>
+                            <td>12-Jan-2025</td>
+                            <td>13-Jan-2025</td>
+                            <td><a href="#" class="report-link">ARC_TR_2025_001.pdf</a></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <p class="records-hint">* Reports appear automatically once uploaded by an ARC Infinity Lab employee. File names always match the Test Ref. No.</p>
+        </section>
+    </main>
+
+    <footer>
+        <div class="footer-content">
+            <div class="footer-section">
+                <h3>ARC Infinity Lab</h3>
+                <p>NABL Accredited Testing Laboratory for Building Materials.</p>
+            </div>
+            <div class="footer-section">
+                <h3>Contact</h3>
+                <ul>
+                    <li>Email: enquiry@arcinfinitylab.com</li>
+                    <li>Phone: <a href="tel:+919699299955">+91 96992 99955</a></li>
+                    <li>Location: Mumbai, India</li>
+                </ul>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; <span id="year"></span> ARC Infinity Lab Pvt. Ltd. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>
