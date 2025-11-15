@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Careers | ARC Infinity Lab</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header>
+        <nav>
+            <div class="logo">
+                <img src="image/ARC - New Logo Rec.jpeg" alt="ARC Infinity Lab Logo" class="logo-image">
+                <div class="logo-text">
+                    <div class="logo-title">
+                        <span class="logo-arc">ARC</span>
+                        <span class="logo-infinity">Infinity Lab</span>
+                    </div>
+                    <span class="logo-slogan">A Hub for Material Testing</span>
+                </div>
+            </div>
+            <ul class="nav-links">
+                <li><a href="index.html#home">Home</a></li>
+                <li><a href="index.html#about">About</a></li>
+                <li><a href="index.html#services">Services</a></li>
+                <li><a href="index.html#gallery">Gallery</a></li>
+                <li><a href="index.html#contact">Contact</a></li>
+                <li><a href="careers.html">Careers</a></li>
+                <li class="mobile-login"><a href="login.html" class="mobile-login-button">Login</a></li>
+            </ul>
+            <div class="menu-toggle">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+        </nav>
+    </header>
+
+    <main class="careers-page">
+        <section class="careers-hero">
+            <div class="careers-hero-content">
+                <p class="badge">Join Our Team</p>
+                <h1>Build the Future of Material Testing</h1>
+                <p>We are on a mission to deliver accurate, reliable, and timely testing solutions that keep the world’s infrastructure safe. Explore exciting opportunities to grow with ARC Infinity Lab.</p>
+                <div class="hero-actions">
+                    <a href="#open-roles" class="cta-button">View Open Roles</a>
+                    <a href="mailto:hr@arcinfinitylab.com" class="secondary-link">Email our HR team</a>
+                </div>
+            </div>
+            <div class="careers-hero-card">
+                <h3>Why ARC Infinity Lab?</h3>
+                <ul>
+                    <li>Cutting-edge NABL accredited laboratory</li>
+                    <li>Collaborative cross-functional teams</li>
+                    <li>Learning and certification opportunities</li>
+                    <li>Transparent career growth paths</li>
+                </ul>
+            </div>
+        </section>
+
+        <section class="jobs-section" id="open-roles">
+            <div class="section-header">
+                <div>
+                    <p class="badge">Current Openings</p>
+                    <h2>Opportunities to Grow</h2>
+                    <p>Browse our live roles. Each listing shares key details, responsibilities, and the best way to apply.</p>
+                </div>
+                <div class="jobs-meta">
+                    <div>
+                        <span class="jobs-count" id="jobsCount">0</span>
+                        <p>Positions listed</p>
+                    </div>
+                    <div>
+                        <span class="jobs-location">Mumbai &amp; PAN India</span>
+                        <p>Primary locations</p>
+                    </div>
+                </div>
+            </div>
+            <div class="jobs-grid" id="jobsList" aria-live="polite"></div>
+            <p class="jobs-note">Don’t see a role that matches? Send your resume to <a href="mailto:hr@arcinfinitylab.com">hr@arcinfinitylab.com</a> and we’ll keep you in mind.</p>
+        </section>
+
+        <section class="admin-panel">
+            <div class="admin-panel-header">
+                <div>
+                    <p class="badge">Admin Console</p>
+                    <h2>Manage Job Openings</h2>
+                    <p>Use this area to quickly add or remove postings. Changes are stored safely in this browser (local storage) so you can draft listings before publishing.</p>
+                </div>
+                <button type="button" class="outline-button" id="resetJobs">Reset to Default Listings</button>
+            </div>
+            <form id="jobForm" class="job-form">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="jobTitle">Job Title *</label>
+                        <input type="text" id="jobTitle" name="jobTitle" placeholder="e.g., Senior Material Engineer" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="jobLocation">Location *</label>
+                        <input type="text" id="jobLocation" name="jobLocation" placeholder="e.g., Mumbai, India" required>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="jobDepartment">Department *</label>
+                        <input type="text" id="jobDepartment" name="jobDepartment" placeholder="Quality & Testing" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="jobType">Employment Type *</label>
+                        <select id="jobType" name="jobType" required>
+                            <option value="Full-time" selected>Full-time</option>
+                            <option value="Part-time">Part-time</option>
+                            <option value="Contract">Contract</option>
+                            <option value="Internship">Internship</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="jobDescription">Role Summary *</label>
+                    <textarea id="jobDescription" name="jobDescription" rows="4" placeholder="Brief overview of responsibilities and expectations." required></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="applyLink">Application Link</label>
+                    <input type="url" id="applyLink" name="applyLink" placeholder="https://forms.gle/... or mailto:hr@arcinfinitylab.com">
+                </div>
+                <button type="submit" class="cta-button">Add Job Opening</button>
+            </form>
+        </section>
+    </main>
+
+    <footer>
+        <div class="footer-content">
+            <div class="footer-section">
+                <h3>ARC Infinity Lab</h3>
+                <p>NABL Accredited Testing Laboratory for Building Materials.</p>
+            </div>
+            <div class="footer-section">
+                <h3>Quick Links</h3>
+                <ul>
+                    <li><a href="index.html#home">Home</a></li>
+                    <li><a href="index.html#services">Services</a></li>
+                    <li><a href="index.html#gallery">Gallery</a></li>
+                    <li><a href="index.html#contact">Contact</a></li>
+                    <li><a href="careers.html">Careers</a></li>
+                </ul>
+            </div>
+            <div class="footer-section">
+                <h3>Contact</h3>
+                <ul>
+                    <li>Email: enquiry@arcinfinitylab.com</li>
+                    <li>Phone: <a href="tel:+919699299955">+91 9699 299955</a></li>
+                    <li>Location: Mumbai, India</li>
+                </ul>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; <span id="year"></span> ARC Infinity Lab Pvt. Ltd. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>

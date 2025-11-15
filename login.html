@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login | ARC Infinity Lab</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header>
+        <nav>
+            <div class="logo">
+                <img src="image/ARC - New Logo Rec.jpeg" alt="ARC Infinity Lab Logo" class="logo-image">
+                <div class="logo-text">
+                    <div class="logo-title">
+                        <span class="logo-arc">ARC</span>
+                        <span class="logo-infinity">Infinity Lab</span>
+                    </div>
+                    <span class="logo-slogan">A Hub for Material Testing</span>
+                </div>
+            </div>
+            <ul class="nav-links">
+                <li><a href="index.html#home">Home</a></li>
+                <li><a href="index.html#about">About</a></li>
+                <li><a href="index.html#services">Services</a></li>
+                <li><a href="index.html#gallery">Gallery</a></li>
+                <li><a href="index.html#contact">Contact</a></li>
+                <li><a href="careers.html">Careers</a></li>
+                <li class="mobile-login"><a href="login.html" class="mobile-login-button">Login</a></li>
+            </ul>
+            <div class="menu-toggle">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+        </nav>
+    </header>
+
+    <main class="login-page">
+        <div class="login-container">
+            <div class="login-intro">
+                <h1>Welcome Back</h1>
+                <p>Access your ARC Infinity Lab account to track testing projects, download reports, and collaborate with our experts.</p>
+                <p>Customers can also register new accounts to streamline project submissions and monitor progress in real time.</p>
+                <p>Employees use their corporate credentials to stay updated on assignments and workflow insights.</p>
+            </div>
+
+            <div class="login-access">
+                <div class="login-tabs">
+                    <button class="login-tab active" data-target="customer">Customer Login</button>
+                    <button class="login-tab" data-target="employee">Employee Login</button>
+                </div>
+
+                <div class="login-card active" data-type="customer">
+                    <h2>Customer Login</h2>
+                    <span>Access your dashboard, project reports, and support tools.</span>
+                    <form class="login-form">
+                        <div class="form-group">
+                            <label for="customer-userid">User ID</label>
+                            <input type="text" id="customer-userid" name="customer-userid" placeholder="Enter your registered ID">
+                        </div>
+                        <div class="form-group">
+                            <label for="customer-password">Password</label>
+                            <input type="password" id="customer-password" name="customer-password" placeholder="Enter your password">
+                        </div>
+                        <button type="submit">Login</button>
+                        <div class="login-links">
+                            <a href="#">Forgot password?</a>
+                        </div>
+                        <p class="signup-note">New to ARC Infinity Lab? <a href="#">Sign up as a customer</a></p>
+                    </form>
+                </div>
+
+                <div class="login-card" data-type="employee">
+                    <h2>Employee Login</h2>
+                    <span>Use your ARC Infinity Lab credentials to manage internal workflows.</span>
+                    <form class="login-form">
+                        <div class="form-group">
+                            <label for="employee-userid">User ID</label>
+                            <input type="text" id="employee-userid" name="employee-userid" placeholder="Employee ID or email">
+                        </div>
+                        <div class="form-group">
+                            <label for="employee-password">Password</label>
+                            <input type="password" id="employee-password" name="employee-password" placeholder="Enter your password">
+                        </div>
+                        <button type="submit">Login</button>
+                        <div class="login-links">
+                            <a href="#">Forgot password?</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        <div class="footer-content">
+            <div class="footer-section">
+                <h3>ARC Infinity Lab</h3>
+                <p>NABL Accredited Testing Laboratory for Building Materials.</p>
+            </div>
+            <div class="footer-section">
+                <h3>Contact</h3>
+                <ul>
+                    <li>Email: enquiry@arcinfinitylab.com</li>
+                    <li>Phone: <a href="tel:+919699299955">+91 96992 99955</a></li>
+                    <li>Location: Mumbai, India</li>
+                </ul>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; <span id="year"></span> ARC Infinity Lab Pvt. Ltd. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>
