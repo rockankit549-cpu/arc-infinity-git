@@ -95,6 +95,10 @@ nav {
     color: #6BB7E0;
 }
 
+.logo-lab {
+    color: #000000;
+}
+
 .logo-slogan {
     font-size: 0.9rem;
     font-weight: 500;
@@ -775,6 +779,21 @@ footer {
     box-shadow: 0 0 0 3px rgba(0, 188, 212, 0.2);
 }
 
+.login-feedback {
+    min-height: 1.5rem;
+    font-size: 0.9rem;
+    color: #5f6c7b;
+    transition: color 0.3s ease;
+}
+
+.login-feedback.success {
+    color: var(--primary-cyan);
+}
+
+.login-feedback.error {
+    color: var(--primary-red);
+}
+
 .login-form button {
     background: linear-gradient(135deg, var(--primary-cyan), var(--primary-red));
     color: var(--white);
@@ -1069,6 +1088,12 @@ footer {
 
     .logo-text {
         line-height: 1.02;
+        width: max-content;
+    }
+
+    .logo-title,
+    .logo-slogan {
+        white-space: nowrap;
     }
 
     .logo-image {

@@ -1,0 +1,22 @@
+{
+  "name": "arcinfinity-web",
+  "version": "1.0.0",
+  "private": true,
+  "description": "ARC Infinity Lab marketing site with Netlify Functions authentication powered by Neon.",
+  "scripts": {
+    "dev": "netlify dev",
+    "build": "netlify build",
+    "migrate": "node scripts/run-migrations.js"
+  },
+  "dependencies": {
+    "@netlify/neon": "^0.7.2",
+    "bcryptjs": "^2.4.3",
+    "jsonwebtoken": "^9.0.2"
+  },
+  "devDependencies": {
+    "netlify-cli": "^17.33.2"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

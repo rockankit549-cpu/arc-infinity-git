@@ -126,6 +126,73 @@ if (loginTabs.length && loginCards.length) {
     });
 }
 
+const loginForm = document.querySelector('[data-login-form]');
+if (loginForm) {
+    const loginFeedback = loginForm.querySelector('[data-login-feedback]');
+    const submitButton = loginForm.querySelector('button[type="submit"]');
+
+    const setLoginFeedback = (status, message) => {
+        if (!loginFeedback) return;
+        loginFeedback.textContent = message || '';
+        loginFeedback.classList.remove('success', 'error');
+        if (status && status !== 'info') {
+            loginFeedback.classList.add(status);
+        }
+    };
+
+    loginForm.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const emailInput = loginForm.querySelector('#customer-email');
+        const passwordInput = loginForm.querySelector('#customer-password');
+        if (!emailInput || !passwordInput) return;
+
+        const email = emailInput.value.trim();
+        const password = passwordInput.value;
+        if (!email || !password) {
+            setLoginFeedback('error', 'Please enter your email and password.');
+            return;
+        }
+
+        setLoginFeedback('info', 'Signing you in...');
+        if (submitButton) {
+            submitButton.disabled = true;
+            submitButton.textContent = 'Signing in...';
+        }
+
+        try {
+            const response = await fetch('/.netlify/functions/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ email, password }),
+            });
+
+            const result = await response.json().catch(() => ({}));
+            if (!response.ok) {
+                throw new Error(result.message || 'Unable to sign in.');
+            }
+
+            if (result.token) {
+                localStorage.setItem('arc_session', result.token);
+            }
+
+            setLoginFeedback('success', 'Login successful! Redirecting...');
+            setTimeout(() => {
+                window.location.href = 'index.html#home';
+            }, 1200);
+        } catch (error) {
+            console.error('Login failed:', error);
+            setLoginFeedback('error', error.message || 'Login failed. Please try again.');
+        } finally {
+            if (submitButton) {
+                submitButton.disabled = false;
+                submitButton.textContent = 'Login';
+            }
+        }
+    });
+}
+
 // Careers page job management
 const jobsList = document.getElementById('jobsList');
 const jobsCount = document.getElementById('jobsCount');
