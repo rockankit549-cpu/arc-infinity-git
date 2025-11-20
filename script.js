@@ -955,30 +955,8 @@ const initNetlifyIdentityWidget = () => {
         });
     };
 
-    const hasClientRole = (roles) => {
-        if (!Array.isArray(roles)) return false;
-        return roles.some((role) => String(role).toLowerCase() === 'client');
-    };
-
-    const isInternalEmail = (email) => {
-        if (typeof email !== 'string') return false;
-        const [, domain = ''] = email.split('@');
-        return domain.trim().toLowerCase().endsWith('arcinfinitylab.com');
-    };
-
     const shouldShowRecordsLink = (user) => {
-        if (!user) return false;
-        if (isInternalEmail(user.email)) {
-            return false;
-        }
-        if (hasClientRole(user.app_metadata?.roles) || hasClientRole(user.user_metadata?.roles)) {
-            return true;
-        }
-        const metaRole = user.app_metadata?.role || user.user_metadata?.role;
-        if (typeof metaRole === 'string' && metaRole.toLowerCase() === 'client') {
-            return true;
-        }
-        return true;
+        return Boolean(user);
     };
 
     const updateNavRecordLinks = (user) => {
@@ -1010,6 +988,8 @@ const initNetlifyIdentityWidget = () => {
             navUserAvatar.textContent = initials || 'A';
             navUserPill.classList.add('show');
         } else {
+            navUserName.textContent = 'Account';
+            navUserAvatar.textContent = 'A';
             navUserPill.classList.remove('show');
         }
     };
@@ -1079,9 +1059,8 @@ const initNetlifyIdentityWidget = () => {
 
     netlifyIdentity.on('logout', () => {
         updatePortalUI(null);
-        if (protectedPaths.includes(window.location.pathname)) {
-            window.location.href = '/login.html';
-        }
+        const homeTarget = '/index.html#home';
+        window.location.href = homeTarget;
     });
 
     if (loginBtn) {
