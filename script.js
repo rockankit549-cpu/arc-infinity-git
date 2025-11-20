@@ -866,27 +866,179 @@ const initNetlifyIdentityWidget = () => {
     }
 
     const loginBtn = document.getElementById('identity-login-btn');
+    const signupBtn = document.getElementById('identity-signup-btn');
     const logoutBtn = document.getElementById('identity-logout-btn');
     const dashboardBtn = document.getElementById('identity-dashboard-btn');
     const loggedInfo = document.getElementById('identity-logged-info');
     const userEmail = document.getElementById('identity-user-email');
     const dashboardLogoutBtn = document.getElementById('dashboard-logout-btn');
     const dashboardUserEmail = document.getElementById('dashboard-user-email');
+    const navLoginLinks = document.querySelectorAll('.mobile-login-button');
+    const navRecordLinks = document.querySelectorAll('.nav-record-link');
+    const onClientDashboard = window.location.pathname.endsWith('/client-dashboard.html');
+    const navUserPill = document.getElementById('nav-user-pill');
+    const navUserAvatar = document.getElementById('nav-user-avatar');
+    const navUserName = document.getElementById('nav-user-name');
+    const protectedPaths = ['/client-dashboard.html'];
+
+    navLoginLinks.forEach((link) => {
+        if (link && !link.dataset.defaultText) {
+            link.dataset.defaultText = link.textContent.trim() || 'Login';
+        }
+        if (link && !link.dataset.defaultHref) {
+            link.dataset.defaultHref = link.getAttribute('href') || 'login.html';
+        }
+        if (link && !link.dataset.defaultDisplay) {
+            link.dataset.defaultDisplay = link.style.display || '';
+        }
+    });
+
+    navRecordLinks.forEach((item) => {
+        if (!item) return;
+        if (!item.dataset.defaultDisplay) {
+            const computed = window.getComputedStyle(item);
+            const fallbackDisplay = computed && computed.display !== 'none' ? computed.display : 'flex';
+            item.dataset.defaultDisplay = fallbackDisplay;
+        }
+        item.style.display = 'none';
+        item.setAttribute('aria-hidden', 'true');
+    });
+
+    const getIdentityDisplayName = (user) => {
+        if (!user) return '';
+        const metaName = user.user_metadata?.full_name?.trim();
+        if (metaName) return metaName;
+        if (user.email) {
+            return formatNameFromEmail(user.email);
+        }
+        return 'Account';
+    };
+
+    const updateNavLoginLinks = (user) => {
+        const displayName = getIdentityDisplayName(user);
+        const isClient = shouldShowRecordsLink(user);
+        navLoginLinks.forEach((link) => {
+            if (!link) return;
+            if (user) {
+                if (onClientDashboard && isClient) {
+                    link.style.display = link.dataset.defaultDisplay || '';
+                    link.textContent = 'Logout';
+                    link.classList.add('nav-logout-link');
+                    link.removeAttribute('href');
+                    link.onclick = (event) => {
+                        event.preventDefault();
+                        netlifyIdentity.logout();
+                    };
+                    link.setAttribute('role', 'button');
+                    link.setAttribute('aria-label', displayName ? `Logout ${displayName}` : 'Logout');
+                } else {
+                    link.style.display = 'none';
+                    link.onclick = null;
+                    link.classList.remove('nav-logout-link');
+                    link.removeAttribute('role');
+                    if (displayName) {
+                        link.setAttribute('aria-label', `Logged in as ${displayName}`);
+                    } else {
+                        link.removeAttribute('aria-label');
+                    }
+                }
+            } else {
+                link.style.display = link.dataset.defaultDisplay || '';
+                link.textContent = link.dataset.defaultText || 'Login';
+                link.classList.remove('nav-logout-link');
+                const defaultHref = link.dataset.defaultHref || 'login.html';
+                link.setAttribute('href', defaultHref);
+                link.onclick = null;
+                link.removeAttribute('role');
+                link.removeAttribute('aria-label');
+            }
+        });
+    };
+
+    const hasClientRole = (roles) => {
+        if (!Array.isArray(roles)) return false;
+        return roles.some((role) => String(role).toLowerCase() === 'client');
+    };
+
+    const isInternalEmail = (email) => {
+        if (typeof email !== 'string') return false;
+        const [, domain = ''] = email.split('@');
+        return domain.trim().toLowerCase().endsWith('arcinfinitylab.com');
+    };
+
+    const shouldShowRecordsLink = (user) => {
+        if (!user) return false;
+        if (isInternalEmail(user.email)) {
+            return false;
+        }
+        if (hasClientRole(user.app_metadata?.roles) || hasClientRole(user.user_metadata?.roles)) {
+            return true;
+        }
+        const metaRole = user.app_metadata?.role || user.user_metadata?.role;
+        if (typeof metaRole === 'string' && metaRole.toLowerCase() === 'client') {
+            return true;
+        }
+        return true;
+    };
+
+    const updateNavRecordLinks = (user) => {
+        const canView = shouldShowRecordsLink(user);
+        navRecordLinks.forEach((item) => {
+            if (!item) return;
+            if (canView) {
+                item.style.display = item.dataset.defaultDisplay || 'flex';
+                item.setAttribute('aria-hidden', 'false');
+            } else {
+                item.style.display = 'none';
+                item.setAttribute('aria-hidden', 'true');
+            }
+        });
+    };
+
+    const updateNavUserPill = (user) => {
+        if (!navUserPill || !navUserAvatar || !navUserName) return;
+        if (user) {
+            const name = getIdentityDisplayName(user);
+            navUserName.textContent = name;
+            const initials = (name || user.email || 'A')
+                .split(' ')
+                .map(part => part.trim()[0])
+                .filter(Boolean)
+                .join('')
+                .slice(0, 2)
+                .toUpperCase();
+            navUserAvatar.textContent = initials || 'A';
+            navUserPill.classList.add('show');
+        } else {
+            navUserPill.classList.remove('show');
+        }
+    };
 
     const updatePortalUI = (user) => {
+        const isLoggedIn = Boolean(user);
+
+        if (loginBtn) {
+            loginBtn.style.display = isLoggedIn ? 'none' : 'inline-flex';
+        }
+
+        if (signupBtn) {
+            signupBtn.style.display = isLoggedIn ? 'none' : 'inline-flex';
+        }
+
+        if (logoutBtn) {
+            logoutBtn.style.display = isLoggedIn ? 'inline-flex' : 'none';
+        }
+
         if (loggedInfo) {
-            if (user) {
+            if (isLoggedIn) {
                 loggedInfo.classList.add('active');
                 if (userEmail) {
                     userEmail.textContent = `Logged in as: ${user.email}`;
                 }
-                if (loginBtn) {
-                    loginBtn.style.display = 'none';
-                }
             } else {
                 loggedInfo.classList.remove('active');
-                if (loginBtn) {
-                    loginBtn.style.display = 'inline-flex';
+                if (userEmail) {
+                    userEmail.textContent = 'Please login to continue.';
                 }
             }
         }
@@ -896,37 +1048,51 @@ const initNetlifyIdentityWidget = () => {
                 ? `Logged in as: ${user.email}`
                 : 'Checking account...';
         }
+
+        updateNavLoginLinks(user);
+        updateNavRecordLinks(user);
+        updateNavUserPill(user);
     };
 
-    const guardDashboard = (user) => {
-        const onDashboard = window.location.pathname.endsWith('/client-dashboard.html');
-        if (onDashboard && !user) {
-            window.location.href = '/';
+    const guardProtectedPages = (user) => {
+        if (!protectedPaths.includes(window.location.pathname)) {
+            return;
+        }
+
+        if (!user) {
+            window.location.href = '/login.html';
         }
     };
 
     netlifyIdentity.on('init', (user) => {
         updatePortalUI(user);
-        guardDashboard(user);
+        guardProtectedPages(user);
     });
 
     netlifyIdentity.on('login', (user) => {
         updatePortalUI(user);
-        if (!window.location.pathname.endsWith('/client-dashboard.html')) {
-            window.location.href = '/client-dashboard.html';
+        const targetPath = '/client-dashboard.html';
+        if (window.location.pathname !== targetPath) {
+            window.location.href = targetPath;
         }
     });
 
     netlifyIdentity.on('logout', () => {
         updatePortalUI(null);
-        if (window.location.pathname.endsWith('/client-dashboard.html')) {
-            window.location.href = '/';
+        if (protectedPaths.includes(window.location.pathname)) {
+            window.location.href = '/login.html';
         }
     });
 
     if (loginBtn) {
         loginBtn.addEventListener('click', () => {
             netlifyIdentity.open('login');
+        });
+    }
+
+    if (signupBtn) {
+        signupBtn.addEventListener('click', () => {
+            netlifyIdentity.open('signup');
         });
     }
 

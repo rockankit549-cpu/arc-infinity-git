@@ -120,6 +120,10 @@ nav {
     align-items: center;
 }
 
+.nav-record-link {
+    display: none;
+}
+
 .mobile-login {
     display: flex;
     align-items: center;
@@ -144,6 +148,50 @@ nav {
     transform: translateY(-2px);
     box-shadow: 0 14px 24px rgba(0, 0, 0, 0.15);
     color: var(--primary-red);
+}
+
+.mobile-login-button.nav-user-label {
+    background: transparent;
+    border-color: transparent;
+    box-shadow: none;
+    cursor: default;
+    padding: 0.5rem 0.75rem;
+    color: var(--dark-gray);
+}
+
+.mobile-login-button.nav-user-label:hover {
+    transform: none;
+    box-shadow: none;
+    color: var(--dark-gray);
+}
+
+.nav-user-pill {
+    display: none;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.4rem 0.8rem;
+    border-radius: 999px;
+    background: rgba(0, 188, 212, 0.1);
+    color: var(--dark-gray);
+    font-weight: 600;
+    font-size: 0.95rem;
+}
+
+.nav-user-pill.show {
+    display: inline-flex;
+}
+
+.nav-user-avatar {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--primary-cyan), var(--primary-red));
+    color: var(--white);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.85rem;
+    font-weight: 700;
 }
 
 .nav-links a {
@@ -664,15 +712,15 @@ footer {
 .login-container {
     max-width: 1100px;
     margin: 0 auto;
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    display: flex;
+    flex-direction: column;
     gap: 2rem;
     align-items: start;
 }
 
 .login-access {
-    display: flex;
-    flex-direction: column;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
     gap: 1.5rem;
 }
 
@@ -682,6 +730,39 @@ footer {
     border-radius: 20px;
     box-shadow: 0 20px 40px rgba(0, 0, 0, 0.08);
     animation: fadeInUp 0.6s ease;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.login-intro p {
+    color: #5f6c7b;
+    margin-bottom: 0.75rem;
+}
+
+.login-intro-content {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 2rem;
+    align-items: start;
+}
+
+.intro-copy p:first-of-type {
+    margin-top: 0;
+}
+
+.intro-bullets {
+    list-style: disc;
+    padding-left: 1.25rem;
+    background: rgba(0, 188, 212, 0.08);
+    border-radius: 16px;
+    padding: 1rem 1.5rem;
+    color: #30404d;
+    box-shadow: inset 0 0 0 1px rgba(0, 188, 212, 0.15);
+}
+
+.intro-bullets li + li {
+    margin-top: 0.65rem;
 }
 
 .client-portal {
@@ -748,11 +829,6 @@ footer {
     color: var(--dark-gray);
 }
 
-.login-intro p {
-    color: #5f6c7b;
-    margin-bottom: 0.75rem;
-}
-
 .login-card {
     background: var(--white);
     padding: 2rem;
@@ -761,12 +837,8 @@ footer {
     animation: fadeInUp 0.8s ease;
 }
 
-.login-card[data-type] {
-    display: none;
-}
-
-.login-card[data-type].active {
-    display: block;
+.login-panel {
+    height: 100%;
 }
 
 .login-tabs {
@@ -1532,8 +1604,13 @@ footer {
         grid-template-columns: 1fr;
     }
 
+    .login-intro-content {
+        grid-template-columns: 1fr;
+    }
+
     .login-access {
         order: 2;
+        grid-template-columns: 1fr;
     }
 
     .mobile-login {

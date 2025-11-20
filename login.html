@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login | ARC Infinity Lab</title>
     <link rel="stylesheet" href="styles.css">
+    <script defer src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
 </head>
 <body>
     <header>
@@ -26,9 +27,12 @@
                 <li><a href="index.html#gallery">Gallery</a></li>
                 <li><a href="index.html#contact">Contact</a></li>
                 <li><a href="careers.html">Careers</a></li>
-                <li><a href="records.html">Records</a></li>
-                <li><a href="employee-portal.html">Employee Portal</a></li>
+                <li class="nav-record-link"><a href="client-dashboard.html">Test Records</a></li>
                 <li class="mobile-login"><a href="login.html" class="mobile-login-button">Login</a></li>
+                <li class="nav-user-pill" id="nav-user-pill" aria-live="polite">
+                    <span class="nav-user-avatar" id="nav-user-avatar">A</span>
+                    <span id="nav-user-name">Account</span>
+                </li>
             </ul>
             <div class="menu-toggle">
                 <span></span>
@@ -41,54 +45,54 @@
     <main class="login-page">
         <div class="login-container">
             <div class="login-intro">
-                <h1>Welcome Back</h1>
-                <p>Access your ARC Infinity Lab account to track testing projects, download reports, and collaborate with our experts.</p>
-                <p>Customers can also register new accounts to streamline project submissions and monitor progress in real time.</p>
-                <p>Employees use their corporate credentials to stay updated on assignments and workflow insights.</p>
+                <div class="login-intro-header">
+                    <h1>Secure Portal Access</h1>
+                </div>
+                <div class="login-intro-content">
+                    <div class="intro-copy">
+                        <p>ARC Infinity Lab now relies on Netlify Identity for every client and employee login. Each account gets an email + password, Identity issues a JWT token, and our Netlify Functions verify that token before Neon/Postgres ever returns sensitive records.</p>
+                        <p>Follow the steps below to authenticate. Once you're authorized, we route you to the proper dashboard and only expose the data tied to your user profile.</p>
+                    </div>
+                    <ul class="intro-bullets">
+                        <li>Clients: use the buttons below to log in or request a new invite.</li>
+                        <li>Employees: sign in with your corporate email, then jump into the portal.</li>
+                        <li>Admins: keep registration invite-only or approve requests from Identity.</li>
+                    </ul>
+                </div>
             </div>
 
             <div class="login-access">
-                <div class="login-tabs">
-                    <button class="login-tab active" data-target="customer">Customer Login</button>
-                    <button class="login-tab" data-target="employee">Employee Login</button>
-                </div>
+                <section class="client-portal-card login-panel">
+                    <div class="client-portal-actions">
+                        <h2>Client Portal</h2>
+                        <p>Sign in with the email address we registered for you. New customers can request access with the Sign Up button, which triggers Netlify Identity's onboarding flow.</p>
+                        <div class="identity-buttons">
+                            <button type="button" class="cta-button" id="identity-login-btn">Login</button>
+                            <button type="button" class="ghost-button" id="identity-signup-btn">Sign Up / Request Access</button>
+                            <button type="button" class="ghost-button" id="identity-logout-btn" style="display: none;">Logout</button>
+                        </div>
+                        <div class="identity-info" id="identity-logged-info" aria-live="polite">
+                            <p id="identity-user-email">Checking your session...</p>
+                            <p>Once authenticated we unlock your ARC Infinity client dashboard and fetch your Neondb records through secure Netlify Functions.</p>
+                            <div class="identity-buttons">
+                                <button type="button" class="cta-button" id="identity-dashboard-btn">Open Client Dashboard</button>
+                            </div>
+                        </div>
+                        <p class="signup-note">Need help with access? Email <a href="mailto:onboard@arcinfinitylab.com">onboard@arcinfinitylab.com</a> and we'll send an invite through Netlify Identity.</p>
+                    </div>
+                </section>
 
-                <div class="login-card active" data-type="customer">
-                    <h2>Customer Login</h2>
-                    <span>Access your dashboard, project reports, and support tools.</span>
-                    <form class="login-form" id="customer-login-form" data-login-form="customer" data-redirect="records.html">
-                        <div class="form-group">
-                            <label for="customer-userid">User ID</label>
-                            <input type="text" id="customer-userid" name="customer-userid" placeholder="ARC-CLIENT-001" autocomplete="username" required data-user-id-input>
-                        </div>
-                        <div class="form-group">
-                            <label for="customer-password">Password</label>
-                            <input type="password" id="customer-password" name="customer-password" placeholder="Enter your password" autocomplete="current-password" required minlength="6">
-                        </div>
-                        <div class="login-feedback" data-login-feedback role="status" aria-live="polite"></div>
-                        <button type="submit">Login</button>
-                        <p class="signup-note">Need access? <a href="mailto:onboard@arcinfinitylab.com?subject=ARC%20Infinity%20Lab%20Access%20Request">Contact our onboarding team</a></p>
-                    </form>
-                </div>
-
-                <div class="login-card" data-type="employee">
-                    <h2>Employee Login</h2>
-                    <span>Use your ARC Infinity Lab credentials to manage internal workflows.</span>
-                    <form class="login-form" id="employee-login-form" data-login-form="employee" data-redirect="employee-portal.html">
-                        <div class="form-group">
-                            <label for="employee-email">Corporate Email</label>
-                            <input type="email" id="employee-email" name="employee-email" placeholder="employee@arcinfinitylab.com" autocomplete="email" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="employee-userid">User ID</label>
-                            <input type="text" id="employee-userid" name="employee-userid" placeholder="ARC-EMP-001" autocomplete="username" required data-user-id-input>
-                        </div>
-                        <div class="login-feedback" data-login-feedback role="status" aria-live="polite"></div>
-                        <button type="submit">Login</button>
-                    </form>
-                </div>
+                <section class="login-card login-panel">
+                    <h2>Employee Access</h2>
+                    <span>Employees also go through Netlify Identity to receive a token before visiting the internal portal.</span>
+                    <ul>
+                        <li>Use your corporate email so we can map you to internal Neon roles.</li>
+                        <li>After logging in, open the Employee Portal to see assignments, workflows, and lab updates.</li>
+                        <li>If you lose access, reach out to HR so they can re-invite you from the Identity dashboard.</li>
+                    </ul>
+                    <a class="cta-button" href="employee-portal.html">Go to Employee Portal</a>
+                </section>
             </div>
-
         </div>
     </main>
 
