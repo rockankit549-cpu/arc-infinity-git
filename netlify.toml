@@ -21,6 +21,18 @@
   force = true
 
 [[redirects]]
+  from = "/login"
+  to = "/login.html"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/login/"
+  to = "/login.html"
+  status = 200
+  force = true
+
+[[redirects]]
   from = "/client-dashboard.html"
   to = "/client-dashboard.html"
   status = 200
