@@ -47,9 +47,9 @@ const formatNameFromEmail = (email) => {
 const normalizeTestRef = (ref) => (ref || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
 
 const getStoredUserProfile = () => {
-    const customer = readStoredJSON(CUSTOMER_PROFILE_KEY);
     const employee = readStoredJSON(EMPLOYEE_PROFILE_KEY);
-    return customer || employee || null;
+    const customer = readStoredJSON(CUSTOMER_PROFILE_KEY);
+    return employee || customer || null;
 };
 
 const normalizeRoles = (roles) => {
@@ -933,7 +933,6 @@ const initNetlifyIdentityWidget = () => {
     }
 
     const loginBtn = document.getElementById('identity-login-btn');
-    const signupBtn = document.getElementById('identity-signup-btn');
     const logoutBtn = document.getElementById('identity-logout-btn');
     const dashboardBtn = document.getElementById('identity-dashboard-btn');
     const employeeLoginBtn = document.getElementById('identity-employee-login-btn');
@@ -1122,10 +1121,6 @@ const initNetlifyIdentityWidget = () => {
             employeeLoginBtn.style.display = isLoggedIn ? 'none' : 'inline-flex';
         }
 
-        if (signupBtn) {
-            signupBtn.style.display = isLoggedIn ? 'none' : 'inline-flex';
-        }
-
         if (logoutBtn) {
             logoutBtn.style.display = isLoggedIn ? 'inline-flex' : 'none';
         }
@@ -1173,8 +1168,9 @@ const initNetlifyIdentityWidget = () => {
     };
 
     netlifyIdentity.on('init', (user) => {
-        updatePortalUI(user);
-        guardProtectedPages(user);
+        const effectiveUser = user || getStoredUserProfile();
+        updatePortalUI(effectiveUser);
+        guardProtectedPages(effectiveUser);
     });
 
     netlifyIdentity.on('login', (user) => {
@@ -1197,12 +1193,6 @@ const initNetlifyIdentityWidget = () => {
         });
     }
 
-    if (signupBtn) {
-        signupBtn.addEventListener('click', () => {
-            netlifyIdentity.open('signup');
-        });
-    }
-
     if (employeeLoginBtn) {
         employeeLoginBtn.addEventListener('click', () => {
             netlifyIdentity.open('login');
@@ -1217,7 +1207,7 @@ const initNetlifyIdentityWidget = () => {
 
     if (dashboardBtn) {
         dashboardBtn.addEventListener('click', () => {
-            const user = netlifyIdentity.currentUser();
+            const user = netlifyIdentity.currentUser() || getStoredUserProfile();
             const target = isEmployeeUser(user) ? EMPLOYEE_PORTAL_PATH : DASHBOARD_PATH;
             window.location.href = target;
         });
