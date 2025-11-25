@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login | ARC Infinity Lab</title>
+    <link rel="icon" type="image/png" href="/image/ARC - NoWB.png">
     <link rel="stylesheet" href="styles.css">
     <script defer src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
 </head>
@@ -27,7 +28,8 @@
                 <li><a href="index.html#gallery">Gallery</a></li>
                 <li><a href="index.html#contact">Contact</a></li>
                 <li><a href="careers.html">Careers</a></li>
-                <li class="nav-record-link"><a href="client-dashboard.html">Test Records</a></li>
+                <li class="nav-record-link"><a href="/client-dashboard">Test Records</a></li>
+                <li class="nav-update-link"><a href="/employee-portal">Update Records</a></li>
                 <li class="mobile-login"><a href="login.html" class="mobile-login-button">Login</a></li>
                 <li class="nav-user-pill" id="nav-user-pill" aria-live="polite">
                     <span class="nav-user-avatar" id="nav-user-avatar">A</span>
@@ -78,7 +80,7 @@
                                 <button type="button" class="cta-button" id="identity-dashboard-btn">Open Client Dashboard</button>
                             </div>
                         </div>
-                        <p class="signup-note">Need help with access? Email <a href="mailto:onboard@arcinfinitylab.com">onboard@arcinfinitylab.com</a> and we'll send an invite through Netlify Identity.</p>
+                        <p class="signup-note">Need help with access? Email <a href="mailto:ankit@arcinfinitylab.com">ankit@arcinfinitylab.com</a> and we'll send an invite through Netlify Identity.</p>
                     </div>
                 </section>
 
@@ -90,7 +92,10 @@
                         <li>After logging in, open the Employee Portal to see assignments, workflows, and lab updates.</li>
                         <li>If you lose access, reach out to HR so they can re-invite you from the Identity dashboard.</li>
                     </ul>
-                    <a class="cta-button" href="employee-portal.html">Go to Employee Portal</a>
+                    <div class="identity-buttons">
+                        <button type="button" class="ghost-button" id="identity-employee-login-btn">Employee Login</button>
+                        <a class="cta-button" href="/employee-portal">Go to Employee Portal</a>
+                    </div>
                 </section>
             </div>
         </div>

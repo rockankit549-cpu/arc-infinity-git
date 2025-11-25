@@ -7,6 +7,10 @@ const EMPLOYEE_PROFILE_KEY = 'arc_employee_profile';
 const CLIENTS_TABLE_KEY = 'arc_clients_table';
 const TESTS_TABLE_KEY = 'arc_tests_table';
 const REPORT_UPLOAD_KEY = 'arc_report_uploads';
+const DASHBOARD_PATH = '/client-dashboard';
+const DASHBOARD_HTML_PATH = '/client-dashboard.html';
+const EMPLOYEE_PORTAL_PATH = '/employee-portal';
+const EMPLOYEE_PORTAL_HTML_PATH = '/employee-portal.html';
 
 const safeJSONParse = (value, fallback = null) => {
     try {
@@ -41,6 +45,69 @@ const formatNameFromEmail = (email) => {
 };
 
 const normalizeTestRef = (ref) => (ref || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+
+const getStoredUserProfile = () => {
+    const customer = readStoredJSON(CUSTOMER_PROFILE_KEY);
+    const employee = readStoredJSON(EMPLOYEE_PROFILE_KEY);
+    return customer || employee || null;
+};
+
+const normalizeRoles = (roles) => {
+    if (!roles) return [];
+    if (Array.isArray(roles)) return roles.map((r) => String(r || '').toLowerCase());
+    if (typeof roles === 'string') return [roles.toLowerCase()];
+    return [];
+};
+
+const isEmployeeUser = (user) => {
+    const roleList =
+        normalizeRoles(user?.app_metadata?.roles) ||
+        normalizeRoles(user?.user_metadata?.roles);
+    const metaRole = (user?.user_metadata?.role || '').toLowerCase();
+    const storedRole = (getStoredUserProfile()?.role || '').toLowerCase();
+    const hasSession = Boolean(user) || checkUserLoginStatus();
+    if (!hasSession) return false;
+
+    return (
+        roleList.includes('employee') ||
+        roleList.includes('admin') ||
+        metaRole === 'employee' ||
+        metaRole === 'admin' ||
+        storedRole === 'employee'
+    );
+};
+
+const checkUserLoginStatus = () => {
+    const legacyFlag = localStorage.getItem('isLoggedIn') === 'true';
+    const hasSession = Boolean(localStorage.getItem('arc_session'));
+    return Boolean(legacyFlag || hasSession || getStoredUserProfile());
+};
+
+const getUserData = () => {
+    const stored = safeJSONParse(localStorage.getItem('userData'), null);
+    const profile = getStoredUserProfile();
+    if (stored && (stored.name || stored.email)) return stored;
+    if (profile) return profile;
+    return { name: 'Account' };
+};
+
+document.addEventListener('DOMContentLoaded', () => {
+    const userPill = document.getElementById('nav-user-pill');
+    const navUserName = document.getElementById('nav-user-name');
+    const navUserAvatar = document.getElementById('nav-user-avatar');
+    if (!userPill || !navUserName || !navUserAvatar) return;
+
+    if (checkUserLoginStatus()) {
+        const userData = getUserData() || {};
+        const displayName = userData.name || userData.email || 'Account';
+        navUserName.textContent = displayName;
+        const initials = (displayName || 'A').trim().charAt(0).toUpperCase() || 'A';
+        navUserAvatar.textContent = initials;
+        userPill.classList.add('show');
+    } else {
+        userPill.classList.remove('show');
+    }
+});
 
 menuToggle.addEventListener('click', () => {
     menuToggle.classList.toggle('active');
@@ -869,17 +936,40 @@ const initNetlifyIdentityWidget = () => {
     const signupBtn = document.getElementById('identity-signup-btn');
     const logoutBtn = document.getElementById('identity-logout-btn');
     const dashboardBtn = document.getElementById('identity-dashboard-btn');
+    const employeeLoginBtn = document.getElementById('identity-employee-login-btn');
     const loggedInfo = document.getElementById('identity-logged-info');
     const userEmail = document.getElementById('identity-user-email');
     const dashboardLogoutBtn = document.getElementById('dashboard-logout-btn');
     const dashboardUserEmail = document.getElementById('dashboard-user-email');
     const navLoginLinks = document.querySelectorAll('.mobile-login-button');
     const navRecordLinks = document.querySelectorAll('.nav-record-link');
-    const onClientDashboard = window.location.pathname.endsWith('/client-dashboard.html');
+    const navUpdateLinks = document.querySelectorAll('.nav-update-link');
+    const isOnClientDashboard = (path) => {
+        return (
+            path === DASHBOARD_PATH ||
+            path === `${DASHBOARD_PATH}/` ||
+            path === DASHBOARD_HTML_PATH
+        );
+    };
+    const isOnEmployeePortal = (path) => {
+        return (
+            path === EMPLOYEE_PORTAL_PATH ||
+            path === `${EMPLOYEE_PORTAL_PATH}/` ||
+            path === EMPLOYEE_PORTAL_HTML_PATH
+        );
+    };
+    const onClientDashboard = isOnClientDashboard(window.location.pathname);
     const navUserPill = document.getElementById('nav-user-pill');
     const navUserAvatar = document.getElementById('nav-user-avatar');
     const navUserName = document.getElementById('nav-user-name');
-    const protectedPaths = ['/client-dashboard.html'];
+    const protectedPaths = [
+        DASHBOARD_PATH,
+        `${DASHBOARD_PATH}/`,
+        DASHBOARD_HTML_PATH,
+        EMPLOYEE_PORTAL_PATH,
+        `${EMPLOYEE_PORTAL_PATH}/`,
+        EMPLOYEE_PORTAL_HTML_PATH
+    ];
 
     navLoginLinks.forEach((link) => {
         if (link && !link.dataset.defaultText) {
@@ -904,6 +994,17 @@ const initNetlifyIdentityWidget = () => {
         item.setAttribute('aria-hidden', 'true');
     });
 
+    navUpdateLinks.forEach((item) => {
+        if (!item) return;
+        if (!item.dataset.defaultDisplay) {
+            const computed = window.getComputedStyle(item);
+            const fallbackDisplay = computed && computed.display !== 'none' ? computed.display : 'flex';
+            item.dataset.defaultDisplay = fallbackDisplay;
+        }
+        item.style.display = 'none';
+        item.setAttribute('aria-hidden', 'true');
+    });
+
     const getIdentityDisplayName = (user) => {
         if (!user) return '';
         const metaName = user.user_metadata?.full_name?.trim();
@@ -916,11 +1017,11 @@ const initNetlifyIdentityWidget = () => {
 
     const updateNavLoginLinks = (user) => {
         const displayName = getIdentityDisplayName(user);
-        const isClient = shouldShowRecordsLink(user);
+        const isPortalView = onClientDashboard || isOnEmployeePortal(window.location.pathname);
         navLoginLinks.forEach((link) => {
             if (!link) return;
             if (user) {
-                if (onClientDashboard && isClient) {
+                if (isPortalView) {
                     link.style.display = link.dataset.defaultDisplay || '';
                     link.textContent = 'Logout';
                     link.classList.add('nav-logout-link');
@@ -959,9 +1060,25 @@ const initNetlifyIdentityWidget = () => {
         return Boolean(user);
     };
 
+    const shouldShowUpdateLink = (user) => isEmployeeUser(user);
+
     const updateNavRecordLinks = (user) => {
         const canView = shouldShowRecordsLink(user);
         navRecordLinks.forEach((item) => {
+            if (!item) return;
+            if (canView) {
+                item.style.display = item.dataset.defaultDisplay || 'flex';
+                item.setAttribute('aria-hidden', 'false');
+            } else {
+                item.style.display = 'none';
+                item.setAttribute('aria-hidden', 'true');
+            }
+        });
+    };
+
+    const updateNavUpdateLinks = (user) => {
+        const canView = shouldShowUpdateLink(user);
+        navUpdateLinks.forEach((item) => {
             if (!item) return;
             if (canView) {
                 item.style.display = item.dataset.defaultDisplay || 'flex';
@@ -1001,6 +1118,10 @@ const initNetlifyIdentityWidget = () => {
             loginBtn.style.display = isLoggedIn ? 'none' : 'inline-flex';
         }
 
+        if (employeeLoginBtn) {
+            employeeLoginBtn.style.display = isLoggedIn ? 'none' : 'inline-flex';
+        }
+
         if (signupBtn) {
             signupBtn.style.display = isLoggedIn ? 'none' : 'inline-flex';
         }
@@ -1031,16 +1152,23 @@ const initNetlifyIdentityWidget = () => {
 
         updateNavLoginLinks(user);
         updateNavRecordLinks(user);
+        updateNavUpdateLinks(user);
         updateNavUserPill(user);
     };
 
     const guardProtectedPages = (user) => {
-        if (!protectedPaths.includes(window.location.pathname)) {
+        const currentPath = window.location.pathname;
+        if (!protectedPaths.includes(currentPath)) {
             return;
         }
 
         if (!user) {
             window.location.href = '/login.html';
+            return;
+        }
+
+        if (isOnEmployeePortal(currentPath) && !isEmployeeUser(user)) {
+            window.location.href = DASHBOARD_PATH;
         }
     };
 
@@ -1051,7 +1179,7 @@ const initNetlifyIdentityWidget = () => {
 
     netlifyIdentity.on('login', (user) => {
         updatePortalUI(user);
-        const targetPath = '/client-dashboard.html';
+        const targetPath = isEmployeeUser(user) ? EMPLOYEE_PORTAL_PATH : DASHBOARD_PATH;
         if (window.location.pathname !== targetPath) {
             window.location.href = targetPath;
         }
@@ -1075,6 +1203,12 @@ const initNetlifyIdentityWidget = () => {
         });
     }
 
+    if (employeeLoginBtn) {
+        employeeLoginBtn.addEventListener('click', () => {
+            netlifyIdentity.open('login');
+        });
+    }
+
     if (logoutBtn) {
         logoutBtn.addEventListener('click', () => {
             netlifyIdentity.logout();
@@ -1083,7 +1217,9 @@ const initNetlifyIdentityWidget = () => {
 
     if (dashboardBtn) {
         dashboardBtn.addEventListener('click', () => {
-            window.location.href = '/client-dashboard.html';
+            const user = netlifyIdentity.currentUser();
+            const target = isEmployeeUser(user) ? EMPLOYEE_PORTAL_PATH : DASHBOARD_PATH;
+            window.location.href = target;
         });
     }
 
