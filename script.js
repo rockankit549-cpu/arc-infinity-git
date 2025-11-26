@@ -82,6 +82,16 @@ const isEmployeeUser = (user) => {
     );
 };
 
+const isClientUser = (user) => {
+    const roleList = collectAllRoles(user);
+    const hasSession = Boolean(user) || checkUserLoginStatus();
+    if (!hasSession) return false;
+    return (
+        roleList.includes('client') ||
+        roleList.includes('customer')
+    );
+};
+
 const checkUserLoginStatus = () => {
     const legacyFlag = localStorage.getItem('isLoggedIn') === 'true';
     const hasSession = Boolean(localStorage.getItem('arc_session'));
@@ -1064,7 +1074,7 @@ const initNetlifyIdentityWidget = () => {
     };
 
     const shouldShowRecordsLink = (user) => {
-        return Boolean(user);
+        return isClientUser(user);
     };
 
     const shouldShowUpdateLink = (user) => isEmployeeUser(user);
@@ -1170,13 +1180,13 @@ const initNetlifyIdentityWidget = () => {
             return;
         }
 
-        if (isOnClientDashboard(currentPath) && isEmployeeUser(user)) {
-            window.location.href = EMPLOYEE_PORTAL_PATH;
+        if (isOnEmployeePortal(currentPath) && !isEmployeeUser(user)) {
+            window.location.href = DASHBOARD_PATH;
             return;
         }
 
-        if (isOnEmployeePortal(currentPath) && !isEmployeeUser(user)) {
-            window.location.href = DASHBOARD_PATH;
+        if (isOnClientDashboard(currentPath) && !isClientUser(user)) {
+            window.location.href = EMPLOYEE_PORTAL_PATH;
         }
     };
 
