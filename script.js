@@ -59,21 +59,26 @@ const normalizeRoles = (roles) => {
     return [];
 };
 
-const isEmployeeUser = (user) => {
-    const roleList =
-        normalizeRoles(user?.app_metadata?.roles) ||
-        normalizeRoles(user?.user_metadata?.roles);
+const collectAllRoles = (user) => {
+    const roles = new Set();
+    normalizeRoles(user?.app_metadata?.roles).forEach((role) => roles.add(role));
+    normalizeRoles(user?.user_metadata?.roles).forEach((role) => roles.add(role));
     const metaRole = (user?.user_metadata?.role || '').toLowerCase();
     const storedRole = (getStoredUserProfile()?.role || '').toLowerCase();
+    if (metaRole) roles.add(metaRole);
+    if (storedRole) roles.add(storedRole);
+    return Array.from(roles);
+};
+
+const isEmployeeUser = (user) => {
+    const roleList = collectAllRoles(user);
     const hasSession = Boolean(user) || checkUserLoginStatus();
     if (!hasSession) return false;
 
     return (
         roleList.includes('employee') ||
-        roleList.includes('admin') ||
-        metaRole === 'employee' ||
-        metaRole === 'admin' ||
-        storedRole === 'employee'
+        roleList.includes('staff') ||
+        roleList.includes('admin')
     );
 };
 
@@ -309,12 +314,15 @@ if (loginForms.length) {
                     localStorage.setItem('arc_session', result.token);
                 }
 
-                const profileKey = role === 'employee' ? EMPLOYEE_PROFILE_KEY : CUSTOMER_PROFILE_KEY;
+                const normalizedRole = (role || '').toLowerCase();
+                const profileKey = normalizedRole === 'employee' || normalizedRole === 'staff'
+                    ? EMPLOYEE_PROFILE_KEY
+                    : CUSTOMER_PROFILE_KEY;
                 writeStoredJSON(profileKey, {
                     email: email || '',
                     userId,
                     name: email ? formatNameFromEmail(email) : userId,
-                    role,
+                    role: normalizedRole || role,
                     lastLogin: new Date().toISOString(),
                 });
 
@@ -1159,6 +1167,11 @@ const initNetlifyIdentityWidget = () => {
 
         if (!user) {
             window.location.href = '/login.html';
+            return;
+        }
+
+        if (isOnClientDashboard(currentPath) && isEmployeeUser(user)) {
+            window.location.href = EMPLOYEE_PORTAL_PATH;
             return;
         }
 
