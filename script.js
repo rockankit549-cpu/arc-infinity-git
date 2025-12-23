@@ -12,6 +12,48 @@ const DASHBOARD_HTML_PATH = '/client-dashboard.html';
 const EMPLOYEE_PORTAL_PATH = '/employee-portal';
 const EMPLOYEE_PORTAL_HTML_PATH = '/employee-portal.html';
 
+const buildPortalLoginUrl = (role = 'client') => {
+    const params = new URLSearchParams({
+        view: 'login',
+        role: role === 'employee' ? 'employee' : 'client'
+    });
+    return `${EMPLOYEE_PORTAL_HTML_PATH}?${params.toString()}`;
+};
+
+const redirectToPortalLogin = (role = 'client') => {
+    if (typeof window === 'undefined') return;
+    window.location.href = buildPortalLoginUrl(role);
+};
+
+const attachPortalRedirect = (element, role = 'client') => {
+    if (!element || element.dataset.portalRedirectAttached === 'true') return;
+    element.dataset.portalRedirectAttached = 'true';
+    element.addEventListener('click', () => redirectToPortalLogin(role));
+};
+
+const wirePortalLoginLinks = () => {
+    const navLoginAnchors = document.querySelectorAll('nav .nav-links .mobile-login-button[href]');
+    const portalLoginUrl = buildPortalLoginUrl('client');
+    navLoginAnchors.forEach((link) => {
+        if (!link) return;
+        link.setAttribute('href', portalLoginUrl);
+        if (!link.dataset.defaultHref) {
+            link.dataset.defaultHref = portalLoginUrl;
+        }
+    });
+
+    attachPortalRedirect(document.getElementById('identity-login-btn'), 'client');
+    attachPortalRedirect(document.getElementById('identity-employee-login-btn'), 'employee');
+};
+
+if (typeof document !== 'undefined') {
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', wirePortalLoginLinks);
+    } else {
+        wirePortalLoginLinks();
+    }
+}
+
 const safeJSONParse = (value, fallback = null) => {
     try {
         return value ? JSON.parse(value) : fallback;
@@ -137,15 +179,25 @@ document.querySelectorAll('.nav-links a').forEach(link => {
     });
 });
 
-// Header scroll effect
-const header = document.querySelector('header');
-window.addEventListener('scroll', () => {
-    if (window.scrollY > 100) {
-        header.classList.add('scrolled');
-    } else {
-        header.classList.remove('scrolled');
+// Auto-close mobile menu on resize to ensure inner content updates correctly
+window.addEventListener('resize', () => {
+    if (window.innerWidth > 768) {
+        menuToggle.classList.remove('active');
+        navLinks.classList.remove('active');
     }
 });
+
+// Header scroll effect
+const header = document.querySelector('header');
+if (header) {
+    window.addEventListener('scroll', () => {
+        if (window.scrollY > 50) {
+            header.classList.add('scrolled');
+        } else {
+            header.classList.remove('scrolled');
+        }
+    });
+}
 
 // Smooth scroll for anchor links
 document.querySelectorAll('a[href^="#"]').forEach(anchor => {
@@ -244,111 +296,6 @@ if (loginTabs.length && loginCards.length) {
             loginCards.forEach(card => {
                 card.classList.toggle('active', card.dataset.type === target);
             });
-        });
-    });
-}
-
-const loginForms = document.querySelectorAll('[data-login-form]');
-if (loginForms.length) {
-    loginForms.forEach((form) => {
-        const loginFeedback = form.querySelector('[data-login-feedback]');
-        const submitButton = form.querySelector('button[type="submit"]');
-        const role = form.dataset.loginForm || 'customer';
-        const redirectTarget = form.dataset.redirect || 'index.html#home';
-
-        const setLoginFeedback = (status, message) => {
-            if (!loginFeedback) return;
-            loginFeedback.textContent = message || '';
-            loginFeedback.classList.remove('success', 'error');
-            if (status && status !== 'info') {
-                loginFeedback.classList.add(status);
-            }
-        };
-
-        form.addEventListener('submit', async (event) => {
-            event.preventDefault();
-            const emailInput = form.querySelector('input[type="email"]');
-            const userIdInput = form.querySelector('[data-user-id-input]');
-            const passwordInput = form.querySelector('input[type="password"]');
-            if (!userIdInput) return;
-
-            const email = emailInput ? emailInput.value.trim() : '';
-            const userId = userIdInput.value.trim();
-            const password = passwordInput ? passwordInput.value : '';
-
-            if (!userId) {
-                setLoginFeedback('error', 'Please enter your user ID.');
-                return;
-            }
-
-            if (emailInput && !email) {
-                setLoginFeedback('error', 'Please enter your email.');
-                return;
-            }
-
-            if (passwordInput && !password) {
-                setLoginFeedback('error', 'Please enter your password.');
-                return;
-            }
-
-            setLoginFeedback('info', 'Signing you in...');
-            if (submitButton) {
-                submitButton.disabled = true;
-                submitButton.textContent = 'Signing in...';
-            }
-
-            try {
-                const payload = {
-                    role,
-                    userId,
-                    password: password || userId,
-                };
-                if (email) {
-                    payload.email = email;
-                }
-
-                const response = await fetch('/.netlify/functions/login', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(payload),
-                });
-
-                const result = await response.json().catch(() => ({}));
-                if (!response.ok) {
-                    throw new Error(result.message || 'Unable to sign in.');
-                }
-
-                if (result.token) {
-                    localStorage.setItem('arc_session', result.token);
-                }
-
-                const normalizedRole = (role || '').toLowerCase();
-                const profileKey = normalizedRole === 'employee' || normalizedRole === 'staff'
-                    ? EMPLOYEE_PROFILE_KEY
-                    : CUSTOMER_PROFILE_KEY;
-                writeStoredJSON(profileKey, {
-                    email: email || '',
-                    userId,
-                    name: email ? formatNameFromEmail(email) : userId,
-                    role: normalizedRole || role,
-                    lastLogin: new Date().toISOString(),
-                });
-
-                setLoginFeedback('success', 'Login successful! Redirecting...');
-                setTimeout(() => {
-                    window.location.href = redirectTarget;
-                }, 1200);
-            } catch (error) {
-                console.error('Login failed:', error);
-                setLoginFeedback('error', error.message || 'Login failed. Please try again.');
-            } finally {
-                if (submitButton) {
-                    submitButton.disabled = false;
-                    submitButton.textContent = 'Login';
-                }
-            }
         });
     });
 }
@@ -961,6 +908,8 @@ const initNetlifyIdentityWidget = () => {
     const navLoginLinks = document.querySelectorAll('.mobile-login-button');
     const navRecordLinks = document.querySelectorAll('.nav-record-link');
     const navUpdateLinks = document.querySelectorAll('.nav-update-link');
+    const defaultPortalHref = buildPortalLoginUrl('client');
+    const employeePortalHref = buildPortalLoginUrl('employee');
     const isOnClientDashboard = (path) => {
         return (
             path === DASHBOARD_PATH ||
@@ -979,6 +928,7 @@ const initNetlifyIdentityWidget = () => {
     const navUserPill = document.getElementById('nav-user-pill');
     const navUserAvatar = document.getElementById('nav-user-avatar');
     const navUserName = document.getElementById('nav-user-name');
+    let loginIntent = null;
     const protectedPaths = [
         DASHBOARD_PATH,
         `${DASHBOARD_PATH}/`,
@@ -993,7 +943,12 @@ const initNetlifyIdentityWidget = () => {
             link.dataset.defaultText = link.textContent.trim() || 'Login';
         }
         if (link && !link.dataset.defaultHref) {
-            link.dataset.defaultHref = link.getAttribute('href') || 'login.html';
+            const href = link.getAttribute('href');
+            const resolvedHref = (href && href !== '#') ? href : defaultPortalHref;
+            link.dataset.defaultHref = resolvedHref;
+            if (href === 'login.html' || href === '/login.html') {
+                link.setAttribute('href', defaultPortalHref);
+            }
         }
         if (link && !link.dataset.defaultDisplay) {
             link.dataset.defaultDisplay = link.style.display || '';
@@ -1064,7 +1019,7 @@ const initNetlifyIdentityWidget = () => {
                 link.style.display = link.dataset.defaultDisplay || '';
                 link.textContent = link.dataset.defaultText || 'Login';
                 link.classList.remove('nav-logout-link');
-                const defaultHref = link.dataset.defaultHref || 'login.html';
+                const defaultHref = link.dataset.defaultHref || defaultPortalHref;
                 link.setAttribute('href', defaultHref);
                 link.onclick = null;
                 link.removeAttribute('role');
@@ -1176,17 +1131,20 @@ const initNetlifyIdentityWidget = () => {
         }
 
         if (!user) {
-            window.location.href = '/login.html';
+            const targetRole = isOnEmployeePortal(currentPath) ? 'employee' : 'client';
+            window.location.href = buildPortalLoginUrl(targetRole);
             return;
         }
 
         if (isOnEmployeePortal(currentPath) && !isEmployeeUser(user)) {
-            window.location.href = DASHBOARD_PATH;
+            alert('Access denied: Employee credentials required.');
+            window.location.href = buildPortalLoginUrl('employee');
             return;
         }
 
         if (isOnClientDashboard(currentPath) && !isClientUser(user)) {
-            window.location.href = EMPLOYEE_PORTAL_PATH;
+            alert('Access denied: Client credentials required.');
+            window.location.href = buildPortalLoginUrl('client');
         }
     };
 
@@ -1197,11 +1155,29 @@ const initNetlifyIdentityWidget = () => {
     });
 
     netlifyIdentity.on('login', (user) => {
+        if (loginIntent === 'client' && !isClientUser(user)) {
+            alert('Access Denied: You must be a Client to log in here.');
+            netlifyIdentity.logout();
+            return;
+        }
+        if (loginIntent === 'employee' && !isEmployeeUser(user)) {
+            alert('Access Denied: You must be an Employee to log in here.');
+            netlifyIdentity.logout();
+            return;
+        }
+
         updatePortalUI(user);
-        const targetPath = isEmployeeUser(user) ? EMPLOYEE_PORTAL_PATH : DASHBOARD_PATH;
+        let targetPath = isEmployeeUser(user) ? EMPLOYEE_PORTAL_PATH : DASHBOARD_PATH;
+        if (loginIntent === 'client') {
+            targetPath = DASHBOARD_PATH;
+        } else if (loginIntent === 'employee') {
+            targetPath = EMPLOYEE_PORTAL_PATH;
+        }
+
         if (window.location.pathname !== targetPath) {
             window.location.href = targetPath;
         }
+        loginIntent = null;
     });
 
     netlifyIdentity.on('logout', () => {
@@ -1211,16 +1187,16 @@ const initNetlifyIdentityWidget = () => {
     });
 
     if (loginBtn) {
-        loginBtn.addEventListener('click', () => {
-            netlifyIdentity.open('login');
-        });
+        attachPortalRedirect(loginBtn, 'client');
     }
 
     if (employeeLoginBtn) {
-        employeeLoginBtn.addEventListener('click', () => {
-            netlifyIdentity.open('login');
-        });
+        attachPortalRedirect(employeeLoginBtn, 'employee');
     }
+
+    netlifyIdentity.on('close', () => {
+        loginIntent = null;
+    });
 
     if (logoutBtn) {
         logoutBtn.addEventListener('click', () => {

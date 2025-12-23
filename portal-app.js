@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { createRoot } from 'react-dom/client';
 import { 
   LayoutDashboard, 
@@ -53,6 +53,51 @@ const generateId = () => {
   return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
 };
 
+const normalizeRoles = (roles) => {
+  if (!roles) return [];
+  if (Array.isArray(roles)) return roles.map((r) => String(r || '').toLowerCase());
+  if (typeof roles === 'string') return [roles.toLowerCase()];
+  return [];
+};
+
+const collectAllRoles = (user) => {
+  if (!user) return [];
+  const roles = new Set();
+  normalizeRoles(user.app_metadata?.roles).forEach((role) => roles.add(role));
+  normalizeRoles(user.user_metadata?.roles).forEach((role) => roles.add(role));
+  const metaRole = (user.user_metadata?.role || '').toLowerCase();
+  if (metaRole) roles.add(metaRole);
+  return Array.from(roles);
+};
+
+const isEmployeeUser = (user) => {
+  const roleList = collectAllRoles(user);
+  return (
+    roleList.includes('employee') ||
+    roleList.includes('staff') ||
+    roleList.includes('admin')
+  );
+};
+
+const isClientUser = (user) => {
+  const roleList = collectAllRoles(user);
+  return roleList.includes('client') || roleList.includes('customer');
+};
+
+const deriveRoleFromIdentity = (user) => {
+  if (!user) return null;
+  if (isEmployeeUser(user)) return 'employee';
+  if (isClientUser(user)) return 'client';
+  return null;
+};
+
+const identityDisplayName = (user) => {
+  if (!user) return '';
+  if (user.user_metadata?.full_name) return user.user_metadata.full_name;
+  if (user.email) return user.email.split('@')[0];
+  return 'Account';
+};
+
 // --- MOCK DATA INITIALIZATION ---
 
 const INITIAL_CLIENTS = [
@@ -105,9 +150,26 @@ const INITIAL_FILES = {
 // --- APP COMPONENT ---
 
 export default function App() {
-  const [view, setView] = useState('home'); 
+  const initialRoute = useMemo(() => {
+    if (typeof window === 'undefined') {
+      return { view: 'home', role: 'client' };
+    }
+
+    const params = new URLSearchParams(window.location.search);
+    const viewParam = params.get('view') === 'login' ? 'login' : 'home';
+    const roleParam = params.get('role') === 'employee' ? 'employee' : 'client';
+
+    return {
+      view: viewParam,
+      role: roleParam
+    };
+  }, []);
+
+  const [view, setView] = useState(initialRoute.view); 
   const [user, setUser] = useState(null); 
+  const [loginRole, setLoginRole] = useState(initialRoute.role);
   const [notification, setNotification] = useState(null); // { message, type }
+  const identityIntentRef = useRef(null); // tracks which role the user attempted when opening Identity
   
   // Data State
   const [clients, setClients] = useState(INITIAL_CLIENTS);
@@ -115,6 +177,99 @@ export default function App() {
   const [tests, setTests] = useState(INITIAL_TESTS);
   const [jobs, setJobs] = useState(INITIAL_JOBS);
   const [uploadedFiles, setUploadedFiles] = useState(INITIAL_FILES);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const params = new URLSearchParams(window.location.search);
+    if (view === 'login') {
+      params.set('view', 'login');
+      params.set('role', loginRole);
+    } else {
+      params.delete('view');
+      params.delete('role');
+    }
+
+    const search = params.toString();
+    const nextUrl = `${window.location.pathname}${search ? `?${search}` : ''}`;
+    window.history.replaceState({}, '', nextUrl);
+  }, [view, loginRole]);
+
+  // Netlify Identity wiring for the portal
+  useEffect(() => {
+    if (typeof window === 'undefined' || !window.netlifyIdentity) return;
+    const identity = window.netlifyIdentity;
+    const notify = (message, type = 'success') => setNotification({ message, type });
+
+    const clearIntent = () => {
+      identityIntentRef.current = null;
+    };
+
+    const resolveAndRoute = (identityUser) => {
+      const intent = identityIntentRef.current;
+      const derivedRole = deriveRoleFromIdentity(identityUser);
+      const targetRole = intent || derivedRole;
+
+      if (!targetRole) {
+        notify('No role found on your account. Please contact support.', 'error');
+        identity.logout();
+        return;
+      }
+
+      if (targetRole === 'employee' && !isEmployeeUser(identityUser)) {
+        notify('Access denied: employee role required.', 'error');
+        identity.logout();
+        return;
+      }
+
+      if (targetRole === 'client' && !isClientUser(identityUser)) {
+        notify('Access denied: client role required.', 'error');
+        identity.logout();
+        return;
+      }
+
+      setUser({
+        type: targetRole,
+        name: identityDisplayName(identityUser),
+        email: identityUser?.email,
+        identityUser
+      });
+      setLoginRole(targetRole);
+      setView(targetRole);
+      clearIntent();
+    };
+
+    const handleInit = (identityUser) => {
+      if (identityUser) {
+        resolveAndRoute(identityUser);
+      }
+    };
+
+    const handleLogin = (identityUser) => {
+      if (!identityUser) return;
+      resolveAndRoute(identityUser);
+    };
+
+    const handleLogout = () => {
+      clearIntent();
+      setUser(null);
+      setView('home');
+      setLoginRole(initialRoute.role);
+    };
+
+    identity.on('init', handleInit);
+    identity.on('login', handleLogin);
+    identity.on('logout', handleLogout);
+    identity.init();
+
+    return () => {
+      if (identity.off) {
+        identity.off('init', handleInit);
+        identity.off('login', handleLogin);
+        identity.off('logout', handleLogout);
+      }
+    };
+  }, [initialRoute.role]);
 
   // --- ACTIONS ---
 
@@ -135,27 +290,52 @@ export default function App() {
   };
 
   const handleLogin = (type, credentials) => {
+    setLoginRole(type);
+
+    if (typeof window !== 'undefined' && window.netlifyIdentity) {
+      identityIntentRef.current = type;
+      window.netlifyIdentity.open('login');
+      return;
+    }
+
     if (type === 'employee') {
-      if (credentials.username === 'admin' && credentials.password === 'admin') {
+      const matchesEmployee = credentials.username === 'admin' && credentials.password === 'admin';
+      const looksLikeClient = clients.some(c => c.email === credentials.username || c.email === credentials.email);
+
+      if (matchesEmployee) {
         setUser({ type: 'employee', name: 'Administrator' });
         setView('employee');
+      } else if (looksLikeClient) {
+        showNotification('Client accounts cannot open the employee portal. Switch to the Client tab.', 'error');
       } else {
-        showNotification('Invalid Employee Credentials (Try: admin/admin)', 'error');
+        showNotification('Invalid employee credentials (try admin/admin).', 'error');
       }
-    } else {
-      const client = clients.find(c => c.email === credentials.email);
-      if (client && credentials.password === '123') { 
+      return;
+    }
+
+    const client = clients.find(c => c.email === credentials.email);
+    const looksLikeEmployee = credentials.email === 'admin' || credentials.username === 'admin';
+
+    if (client && credentials.password === '123') { 
         setUser({ type: 'client', data: client });
         setView('client');
-      } else {
-        showNotification('Invalid Client Credentials (Try emails with pass: 123)', 'error');
-      }
+    } else if (looksLikeEmployee) {
+      showNotification('Employees cannot log in through the client portal. Use the Employee tab.', 'error');
+    } else if (client) {
+      showNotification('Incorrect password for the client portal.', 'error');
+    } else {
+      showNotification('Invalid client credentials (use a listed client email with password 123).', 'error');
     }
   };
 
   const handleLogout = () => {
+    if (typeof window !== 'undefined' && window.netlifyIdentity) {
+      window.netlifyIdentity.logout();
+    }
     setUser(null);
     setView('home');
+    setLoginRole(initialRoute.role);
+    identityIntentRef.current = null;
   };
 
   const handleBulkImport = (dataType, textData) => {
@@ -236,7 +416,14 @@ export default function App() {
       )}
 
       {view === 'home' && <HomePage setView={setView} />}
-      {view === 'login' && <LoginPage onLogin={handleLogin} onBack={() => setView('home')} />}
+      {view === 'login' && (
+        <LoginPage 
+          onLogin={handleLogin} 
+          onBack={() => setView('home')} 
+          initialRole={loginRole}
+          onRoleChange={setLoginRole}
+        />
+      )}
       {view === 'employee' && user && (
         <EmployeeDashboard 
           user={user} 
@@ -564,10 +751,26 @@ function HomePage({ setView }) {
   );
 }
 
-function LoginPage({ onLogin, onBack }) {
-  const [role, setRole] = useState('client');
-  const [email, setEmail] = useState('');
+function LoginPage({ onLogin, onBack, initialRole = 'client', onRoleChange }) {
+  const [role, setRole] = useState(initialRole);
+  const [email, setEmail] = useState(initialRole === 'employee' ? 'admin' : '');
   const [password, setPassword] = useState('');
+  const hasIdentity = typeof window !== 'undefined' && window.netlifyIdentity;
+
+  useEffect(() => {
+    setRole(initialRole);
+    setEmail(initialRole === 'employee' ? 'admin' : '');
+    setPassword('');
+  }, [initialRole]);
+
+  const handleRoleSelect = (nextRole) => {
+    setRole(nextRole);
+    setEmail(nextRole === 'employee' ? 'admin' : '');
+    setPassword('');
+    if (onRoleChange) {
+      onRoleChange(nextRole);
+    }
+  };
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -585,17 +788,18 @@ function LoginPage({ onLogin, onBack }) {
           <h2 className="text-2xl font-bold text-slate-800">Login</h2>
           <button onClick={onBack} className="text-slate-500 hover:text-slate-700"><X size={20}/></button>
         </div>
+        <p className="text-sm text-slate-500 mb-4">Use the tabs to pick your role. We’ll open the secure Netlify Identity window so you can sign in with your invited email.</p>
         
         <div className="flex bg-slate-100 p-1 rounded-lg mb-6">
           <button 
             className={`flex-1 py-2 rounded-md text-sm font-medium transition-all ${role === 'client' ? 'bg-white shadow text-blue-600' : 'text-slate-500'}`}
-            onClick={() => { setRole('client'); setEmail(''); setPassword(''); }}
+            onClick={() => handleRoleSelect('client')}
           >
             Client
           </button>
           <button 
             className={`flex-1 py-2 rounded-md text-sm font-medium transition-all ${role === 'employee' ? 'bg-white shadow text-blue-600' : 'text-slate-500'}`}
-            onClick={() => { setRole('employee'); setEmail('admin'); setPassword(''); }}
+            onClick={() => handleRoleSelect('employee')}
           >
             Employee
           </button>
@@ -608,7 +812,7 @@ function LoginPage({ onLogin, onBack }) {
             </label>
             <input 
               type={role === 'client' ? "email" : "text"} 
-              required
+              required={!hasIdentity}
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
@@ -619,18 +823,22 @@ function LoginPage({ onLogin, onBack }) {
             <label className="block text-sm font-medium text-slate-700 mb-1">Password</label>
             <input 
               type="password" 
-              required
+              required={!hasIdentity}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-              placeholder="••••••••"
+              placeholder="********"
             />
           </div>
           <button type="submit" className="w-full py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition-colors">
             Sign In
           </button>
         </form>
-        {role === 'client' && (
+        {hasIdentity ? (
+          <p className="mt-4 text-xs text-center text-slate-400">
+            Netlify Identity will open in a popup. Use the email that was invited for this role.
+          </p>
+        ) : role === 'client' && (
            <p className="mt-4 text-xs text-center text-slate-400">
              Try: satpanth01@gmail.com / 123
            </p>
@@ -1003,3 +1211,4 @@ if (container) {
   const root = createRoot(container);
   root.render(<App />);
 }
+
