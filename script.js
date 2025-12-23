@@ -148,24 +148,6 @@ const getUserData = () => {
     return { name: 'Account' };
 };
 
-document.addEventListener('DOMContentLoaded', () => {
-    const userPill = document.getElementById('nav-user-pill');
-    const navUserName = document.getElementById('nav-user-name');
-    const navUserAvatar = document.getElementById('nav-user-avatar');
-    if (!userPill || !navUserName || !navUserAvatar) return;
-
-    if (checkUserLoginStatus()) {
-        const userData = getUserData() || {};
-        const displayName = userData.name || userData.email || 'Account';
-        navUserName.textContent = displayName;
-        const initials = (displayName || 'A').trim().charAt(0).toUpperCase() || 'A';
-        navUserAvatar.textContent = initials;
-        userPill.classList.add('show');
-    } else {
-        userPill.classList.remove('show');
-    }
-});
-
 menuToggle.addEventListener('click', () => {
     menuToggle.classList.toggle('active');
     navLinks.classList.toggle('active');
@@ -906,8 +888,6 @@ const initNetlifyIdentityWidget = () => {
     const dashboardLogoutBtn = document.getElementById('dashboard-logout-btn');
     const dashboardUserEmail = document.getElementById('dashboard-user-email');
     const navLoginLinks = document.querySelectorAll('.mobile-login-button');
-    const navRecordLinks = document.querySelectorAll('.nav-record-link');
-    const navUpdateLinks = document.querySelectorAll('.nav-update-link');
     const defaultPortalHref = buildPortalLoginUrl('client');
     const employeePortalHref = buildPortalLoginUrl('employee');
     const isOnClientDashboard = (path) => {
@@ -925,9 +905,6 @@ const initNetlifyIdentityWidget = () => {
         );
     };
     const onClientDashboard = isOnClientDashboard(window.location.pathname);
-    const navUserPill = document.getElementById('nav-user-pill');
-    const navUserAvatar = document.getElementById('nav-user-avatar');
-    const navUserName = document.getElementById('nav-user-name');
     let loginIntent = null;
     const protectedPaths = [
         DASHBOARD_PATH,
@@ -953,28 +930,6 @@ const initNetlifyIdentityWidget = () => {
         if (link && !link.dataset.defaultDisplay) {
             link.dataset.defaultDisplay = link.style.display || '';
         }
-    });
-
-    navRecordLinks.forEach((item) => {
-        if (!item) return;
-        if (!item.dataset.defaultDisplay) {
-            const computed = window.getComputedStyle(item);
-            const fallbackDisplay = computed && computed.display !== 'none' ? computed.display : 'flex';
-            item.dataset.defaultDisplay = fallbackDisplay;
-        }
-        item.style.display = 'none';
-        item.setAttribute('aria-hidden', 'true');
-    });
-
-    navUpdateLinks.forEach((item) => {
-        if (!item) return;
-        if (!item.dataset.defaultDisplay) {
-            const computed = window.getComputedStyle(item);
-            const fallbackDisplay = computed && computed.display !== 'none' ? computed.display : 'flex';
-            item.dataset.defaultDisplay = fallbackDisplay;
-        }
-        item.style.display = 'none';
-        item.setAttribute('aria-hidden', 'true');
     });
 
     const getIdentityDisplayName = (user) => {
@@ -1028,61 +983,6 @@ const initNetlifyIdentityWidget = () => {
         });
     };
 
-    const shouldShowRecordsLink = (user) => {
-        return isClientUser(user);
-    };
-
-    const shouldShowUpdateLink = (user) => isEmployeeUser(user);
-
-    const updateNavRecordLinks = (user) => {
-        const canView = shouldShowRecordsLink(user);
-        navRecordLinks.forEach((item) => {
-            if (!item) return;
-            if (canView) {
-                item.style.display = item.dataset.defaultDisplay || 'flex';
-                item.setAttribute('aria-hidden', 'false');
-            } else {
-                item.style.display = 'none';
-                item.setAttribute('aria-hidden', 'true');
-            }
-        });
-    };
-
-    const updateNavUpdateLinks = (user) => {
-        const canView = shouldShowUpdateLink(user);
-        navUpdateLinks.forEach((item) => {
-            if (!item) return;
-            if (canView) {
-                item.style.display = item.dataset.defaultDisplay || 'flex';
-                item.setAttribute('aria-hidden', 'false');
-            } else {
-                item.style.display = 'none';
-                item.setAttribute('aria-hidden', 'true');
-            }
-        });
-    };
-
-    const updateNavUserPill = (user) => {
-        if (!navUserPill || !navUserAvatar || !navUserName) return;
-        if (user) {
-            const name = getIdentityDisplayName(user);
-            navUserName.textContent = name;
-            const initials = (name || user.email || 'A')
-                .split(' ')
-                .map(part => part.trim()[0])
-                .filter(Boolean)
-                .join('')
-                .slice(0, 2)
-                .toUpperCase();
-            navUserAvatar.textContent = initials || 'A';
-            navUserPill.classList.add('show');
-        } else {
-            navUserName.textContent = 'Account';
-            navUserAvatar.textContent = 'A';
-            navUserPill.classList.remove('show');
-        }
-    };
-
     const updatePortalUI = (user) => {
         const isLoggedIn = Boolean(user);
 
@@ -1119,19 +1019,23 @@ const initNetlifyIdentityWidget = () => {
         }
 
         updateNavLoginLinks(user);
-        updateNavRecordLinks(user);
-        updateNavUpdateLinks(user);
-        updateNavUserPill(user);
     };
 
     const guardProtectedPages = (user) => {
         const currentPath = window.location.pathname;
+        const searchParams = new URLSearchParams(window.location.search);
+        const isLoginView = searchParams.get('view') === 'login';
+
+        if (isLoginView) {
+            return;
+        }
+
         if (!protectedPaths.includes(currentPath)) {
             return;
         }
 
         if (!user) {
-            const targetRole = isOnEmployeePortal(currentPath) ? 'employee' : 'client';
+            const targetRole = 'client';
             window.location.href = buildPortalLoginUrl(targetRole);
             return;
         }

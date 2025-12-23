@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { createRoot } from 'react-dom/client';
 import { 
   LayoutDashboard, 
@@ -98,6 +98,8 @@ const identityDisplayName = (user) => {
   return 'Account';
 };
 
+const normalizeEmail = (email) => (email || '').trim().toLowerCase();
+
 // --- MOCK DATA INITIALIZATION ---
 
 const INITIAL_CLIENTS = [
@@ -178,6 +180,69 @@ export default function App() {
   const [jobs, setJobs] = useState(INITIAL_JOBS);
   const [uploadedFiles, setUploadedFiles] = useState(INITIAL_FILES);
 
+  const resolveIdentityUser = useCallback((identityUser, intentRole = null) => {
+    if (!identityUser) return;
+    const notify = (message, type = 'success') => setNotification({ message, type });
+    const derivedRole = deriveRoleFromIdentity(identityUser);
+    const targetRole = intentRole || derivedRole;
+
+    if (!targetRole) {
+      notify('No role found on your account. Please contact support.', 'error');
+      if (window.netlifyIdentity) window.netlifyIdentity.logout();
+      return;
+    }
+
+    if (targetRole === 'employee' && !isEmployeeUser(identityUser)) {
+      notify('Access denied: employee role required.', 'error');
+      if (window.netlifyIdentity) window.netlifyIdentity.logout();
+      return;
+    }
+
+    if (targetRole === 'client' && !isClientUser(identityUser)) {
+      notify('Access denied: client role required.', 'error');
+      if (window.netlifyIdentity) window.netlifyIdentity.logout();
+      return;
+    }
+
+    const userPayload = {
+      type: targetRole,
+      name: identityDisplayName(identityUser),
+      email: identityUser?.email,
+      identityUser
+    };
+
+    if (targetRole === 'client') {
+      const idEmail = normalizeEmail(identityUser.email);
+      const metaEmail = normalizeEmail(identityUser.user_metadata?.client_email);
+      const metaName = (identityUser.user_metadata?.client_name || identityDisplayName(identityUser)).trim();
+      const possibleEmails = new Set([idEmail, metaEmail].filter(Boolean));
+
+      const match = clients.find((c) => possibleEmails.has(normalizeEmail(c.email)));
+
+      if (match) {
+        userPayload.data = match;
+      } else {
+        // Fallback: create a lightweight client profile so the user can log in
+        userPayload.data = {
+          _id: generateId(),
+          title: metaName || idEmail || 'Client',
+          email: identityUser.email,
+          city: 'Unknown',
+          salesPerson: 'ARC Team'
+        };
+      }
+    }
+
+    if (targetRole === 'employee' && !userPayload.name) {
+      userPayload.name = 'Employee';
+    }
+
+    setUser(userPayload);
+    setLoginRole(targetRole);
+    setView(targetRole);
+    identityIntentRef.current = null;
+  }, [clients]);
+
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
@@ -205,49 +270,19 @@ export default function App() {
       identityIntentRef.current = null;
     };
 
-    const resolveAndRoute = (identityUser) => {
-      const intent = identityIntentRef.current;
-      const derivedRole = deriveRoleFromIdentity(identityUser);
-      const targetRole = intent || derivedRole;
-
-      if (!targetRole) {
-        notify('No role found on your account. Please contact support.', 'error');
-        identity.logout();
-        return;
-      }
-
-      if (targetRole === 'employee' && !isEmployeeUser(identityUser)) {
-        notify('Access denied: employee role required.', 'error');
-        identity.logout();
-        return;
-      }
-
-      if (targetRole === 'client' && !isClientUser(identityUser)) {
-        notify('Access denied: client role required.', 'error');
-        identity.logout();
-        return;
-      }
-
-      setUser({
-        type: targetRole,
-        name: identityDisplayName(identityUser),
-        email: identityUser?.email,
-        identityUser
-      });
-      setLoginRole(targetRole);
-      setView(targetRole);
-      clearIntent();
-    };
-
     const handleInit = (identityUser) => {
       if (identityUser) {
-        resolveAndRoute(identityUser);
+        const intent = identityIntentRef.current;
+        resolveIdentityUser(identityUser, intent);
+        clearIntent();
       }
     };
 
     const handleLogin = (identityUser) => {
       if (!identityUser) return;
-      resolveAndRoute(identityUser);
+      const intent = identityIntentRef.current;
+      resolveIdentityUser(identityUser, intent);
+      clearIntent();
     };
 
     const handleLogout = () => {
@@ -269,7 +304,7 @@ export default function App() {
         identity.off('logout', handleLogout);
       }
     };
-  }, [initialRoute.role]);
+  }, [initialRoute.role, resolveIdentityUser]);
 
   // --- ACTIONS ---
 
@@ -289,12 +324,34 @@ export default function App() {
     }
   };
 
-  const handleLogin = (type, credentials) => {
+  const handleLogin = async (type, credentials) => {
     setLoginRole(type);
 
     if (typeof window !== 'undefined' && window.netlifyIdentity) {
+      const identity = window.netlifyIdentity;
+      if (!identity.gotrue || !identity.gotrue.login) {
+        showNotification('Netlify Identity is not ready yet. Please try again in a moment.', 'error');
+        identityIntentRef.current = null;
+        return;
+      }
       identityIntentRef.current = type;
-      window.netlifyIdentity.open('login');
+      try {
+        const user = await identity.gotrue?.login(
+          credentials.email || credentials.username,
+          credentials.password,
+          true
+        );
+        if (user) {
+          resolveIdentityUser(user, type);
+        } else {
+          showNotification('Login failed. Please check your credentials.', 'error');
+          identityIntentRef.current = null;
+        }
+      } catch (error) {
+        const msg = error?.json?.error_description || error?.message || 'Unable to log in. Check your credentials.';
+        showNotification(msg, 'error');
+        identityIntentRef.current = null;
+      }
       return;
     }
 
@@ -753,9 +810,9 @@ function HomePage({ setView }) {
 
 function LoginPage({ onLogin, onBack, initialRole = 'client', onRoleChange }) {
   const [role, setRole] = useState(initialRole);
+  const hasIdentity = typeof window !== 'undefined' && window.netlifyIdentity;
   const [email, setEmail] = useState(initialRole === 'employee' ? 'admin' : '');
   const [password, setPassword] = useState('');
-  const hasIdentity = typeof window !== 'undefined' && window.netlifyIdentity;
 
   useEffect(() => {
     setRole(initialRole);
@@ -788,7 +845,7 @@ function LoginPage({ onLogin, onBack, initialRole = 'client', onRoleChange }) {
           <h2 className="text-2xl font-bold text-slate-800">Login</h2>
           <button onClick={onBack} className="text-slate-500 hover:text-slate-700"><X size={20}/></button>
         </div>
-        <p className="text-sm text-slate-500 mb-4">Use the tabs to pick your role. We’ll open the secure Netlify Identity window so you can sign in with your invited email.</p>
+        <p className="text-sm text-slate-500 mb-4">Use the tabs to pick your role. We’ll verify these credentials against Netlify Identity without opening a popup.</p>
         
         <div className="flex bg-slate-100 p-1 rounded-lg mb-6">
           <button 
@@ -812,7 +869,7 @@ function LoginPage({ onLogin, onBack, initialRole = 'client', onRoleChange }) {
             </label>
             <input 
               type={role === 'client' ? "email" : "text"} 
-              required={!hasIdentity}
+              required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
@@ -823,7 +880,7 @@ function LoginPage({ onLogin, onBack, initialRole = 'client', onRoleChange }) {
             <label className="block text-sm font-medium text-slate-700 mb-1">Password</label>
             <input 
               type="password" 
-              required={!hasIdentity}
+              required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
@@ -836,12 +893,12 @@ function LoginPage({ onLogin, onBack, initialRole = 'client', onRoleChange }) {
         </form>
         {hasIdentity ? (
           <p className="mt-4 text-xs text-center text-slate-400">
-            Netlify Identity will open in a popup. Use the email that was invited for this role.
+            Credentials are verified with Netlify Identity in the background—no popup will open.
           </p>
         ) : role === 'client' && (
-           <p className="mt-4 text-xs text-center text-slate-400">
-             Try: satpanth01@gmail.com / 123
-           </p>
+          <p className="mt-4 text-xs text-center text-slate-400">
+            Try: satpanth01@gmail.com / 123
+          </p>
         )}
       </div>
     </div>
