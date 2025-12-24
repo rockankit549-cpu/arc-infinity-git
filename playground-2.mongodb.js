@@ -5,6 +5,6 @@
 use("WebReporting");
 
 // Find a document in a collection.
-db.getCollection("sales").findOne({
+db.getCollection("ClientData").findOne({
 
 });

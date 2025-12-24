@@ -980,8 +980,9 @@ function EmployeeDashboard({ user, onLogout, data, onDataUpdate, onImport, onFil
         </div>
         <div className="flex items-center gap-4">
           <span className="text-xs md:text-sm text-slate-300 hidden sm:inline">Welcome, {user.name}</span>
-          <button onClick={onLogout} className="p-2 hover:bg-slate-800 rounded-full text-slate-400 hover:text-white transition-colors">
-            <LogOut size={20} />
+          <button onClick={onLogout} className="flex items-center gap-2 px-3 py-2 hover:bg-slate-800 rounded-md text-slate-300 hover:text-white transition-colors">
+            <LogOut size={18} />
+            <span className="text-sm font-medium">Logout</span>
           </button>
         </div>
       </header>
@@ -1146,8 +1147,8 @@ function ClientDashboard({ user, onLogout, data }) {
           </div>
         </div>
         <div className="flex items-center gap-4">
-          <button onClick={onLogout} className="text-slate-500 hover:text-red-600 transition-colors flex items-center gap-1 text-sm font-medium">
-            <LogOut size={16} /> <span className="hidden sm:inline">Sign Out</span>
+          <button onClick={onLogout} className="text-slate-500 hover:text-red-600 transition-colors flex items-center gap-2 text-sm font-medium px-3 py-2 rounded-md hover:bg-slate-50">
+            <LogOut size={18} /> <span>Logout</span>
           </button>
         </div>
       </header>
