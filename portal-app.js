@@ -103,9 +103,6 @@ const normalizeEmail = (email) => (email || '').trim().toLowerCase();
 // --- MOCK DATA INITIALIZATION ---
 
 const INITIAL_CLIENTS = [
-  { _id: generateId(), id: '599', title: 'Satpanth Associates', category: 'Mechanical', street: 'Ground Floor, Office no. 07, Neo Carporate Plaza', location: 'Malad (West)', city: 'Mumbai', pincode: '400064', state: 'Maharashtra', salesPerson: 'Indraj Yadav', salesEmail: 'indraj.y@arcinfinitylab.com', gst: '27ACBFS8724J1ZR', tds: '2', email: 'satpanth01@gmail.com' },
-  { _id: generateId(), id: '623', title: 'Stone Tech Infra', category: 'Mechanical', street: '23, Rajpuria Baug, Gujerati Mandal Road', location: 'Vile Parle (East)', city: 'Mumbai', pincode: '400057', state: 'Maharashtra', salesPerson: 'Satish singh', salesEmail: 'satish.s@arcinfinitylab.com', gst: '27CZNPS2523J1ZW', tds: '0', email: 'syghori97@gmail.com' },
-  { _id: generateId(), id: '637', title: 'Strut Infra', category: 'Mechanical', street: 'F58 Xth, Central Mall, Mahaveer Nagar', location: 'Kandivali (West)', city: 'Mumbai', pincode: '400067', state: 'Maharashtra', salesPerson: 'Indraj Yadav', salesEmail: 'indraj.y@arcinfinitylab.com', gst: '27BMPPM4569L1Z5', tds: '10', email: 'shahnawaz@strutinfra.com' },
 ];
 
 const INITIAL_SITES = [
@@ -174,11 +171,30 @@ export default function App() {
   const identityIntentRef = useRef(null); // tracks which role the user attempted when opening Identity
   
   // Data State
-  const [clients, setClients] = useState(INITIAL_CLIENTS);
+  const [clients, setClients] = useState([]);
   const [sites, setSites] = useState(INITIAL_SITES);
   const [tests, setTests] = useState(INITIAL_TESTS);
   const [jobs, setJobs] = useState(INITIAL_JOBS);
   const [uploadedFiles, setUploadedFiles] = useState(INITIAL_FILES);
+
+  // Fetch Clients from Database
+  useEffect(() => {
+    const fetchClients = async () => {
+      try {
+        const response = await fetch('/api/clients');
+        if (response.ok) {
+          const data = await response.json();
+          setClients(data);
+        } else {
+          console.error("Failed to fetch clients from database.");
+        }
+      } catch (error) {
+        console.error("Error connecting to client database:", error);
+        setNotification({ message: 'Error loading live client data.', type: 'error' });
+      }
+    };
+    fetchClients();
+  }, []);
 
   const resolveIdentityUser = useCallback((identityUser, intentRole = null) => {
     if (!identityUser) return;
@@ -1268,4 +1284,3 @@ if (container) {
   const root = createRoot(container);
   root.render(<App />);
 }
-
