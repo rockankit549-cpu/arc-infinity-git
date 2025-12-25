@@ -53,6 +53,17 @@ const generateId = () => {
   return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
 };
 
+const readFileAsBase64 = (file) => new Promise((resolve, reject) => {
+  const reader = new FileReader();
+  reader.onload = () => {
+    const result = reader.result || '';
+    const base64 = String(result).split(',')[1] || '';
+    resolve(base64);
+  };
+  reader.onerror = () => reject(reader.error || new Error('Unable to read file.'));
+  reader.readAsDataURL(file);
+});
+
 const normalizeRoles = (roles) => {
   if (!roles) return [];
   if (Array.isArray(roles)) return roles.map((r) => String(r || '').toLowerCase());
@@ -100,50 +111,13 @@ const identityDisplayName = (user) => {
 
 const normalizeEmail = (email) => (email || '').trim().toLowerCase();
 
-// --- MOCK DATA INITIALIZATION ---
+// --- DATA API ---
 
-const INITIAL_CLIENTS = [
-];
-
-const INITIAL_SITES = [
-  { _id: generateId(), clientName: 'Stone Tech Infra', address: 'Seven Fold, Junction of Sharddhanand Road', location: 'Vile Parle (East)', email: '' },
-  { _id: generateId(), clientName: 'Satpanth Associates', address: 'CTS No. 88(PT), Chawl No. B1,B2 & B3', location: 'Borivali (East)', email: 'satpanth24@gmail.com' },
-  { _id: generateId(), clientName: 'Strut Infra', address: 'Sheth Edmont, MG Cross Road', location: 'Kandivali (West)', email: '' },
-  { _id: generateId(), clientName: 'Satpanth Associates', address: 'Royal Bliss, Shivaji Chowk, Jakaria Road', location: 'Malad (West)', email: 'rpokar79@gmail.com' },
-  { _id: generateId(), clientName: 'Satpanth Associates', address: 'Shreeji Eternity, Near Mithchauki', location: 'Malad (West)', email: 'narkarmahesh00@gmail.com' },
-  { _id: generateId(), clientName: 'Stone Tech Infra', address: 'Bhavans College, Near Azad Nagar', location: 'Andheri (West)', email: '' },
-  { _id: generateId(), clientName: 'Strut Infra', address: 'Chandak Realtors, Kripa Nagar', location: 'Vile Parle (West)', email: 'sarita@strutinfra.com' },
-];
-
-const INITIAL_TESTS = [
-  { _id: generateId(), date: '01-04-2025', inwardNo: 'ARC/25-26/16', uniqueRef: '16--01', material: 'Concrete Cube', desc: 'Comp. Strength', samples: '3', idMark: 'P56, P59, Staircase', grade: 'M-50', castingDate: '25-03-2025', age: '7', startDate: '01-04-2025', witness: 'No', link: '4', client: 'Satpanth Associates' },
-  { _id: generateId(), date: '01-04-2025', inwardNo: 'ARC/25-26/17', uniqueRef: '17--01', material: 'Concrete Cube', desc: 'Comp. Strength', samples: '3', idMark: 'P56, P59, Staircase', grade: 'M-50', castingDate: '25-03-2025', age: '28', startDate: '22-04-2025', witness: 'No', link: '4', client: 'Satpanth Associates' },
-  { _id: generateId(), date: '01-04-2025', inwardNo: 'ARC/25-26/18', uniqueRef: '18--01', material: 'Concrete Cube', desc: 'Comp. Strength', samples: '3', idMark: 'P1, 2, 9, 10', grade: 'M-50', castingDate: '27-03-2025', age: '7', startDate: '03-04-2025', witness: 'No', link: '4', client: 'Satpanth Associates' },
-  { _id: generateId(), date: '01-04-2025', inwardNo: 'ARC/25-26/19', uniqueRef: '19--01', material: 'Concrete Cube', desc: 'Comp. Strength', samples: '3', idMark: 'P1, 2, 9, 10', grade: 'M-50', castingDate: '27-03-2025', age: '28', startDate: '24-04-2025', witness: 'No', link: '4', client: 'Satpanth Associates' },
-  { _id: generateId(), date: '01-04-2025', inwardNo: 'ARC/25-26/20', uniqueRef: '20--01', material: 'Concrete Cube', desc: 'Comp. Strength', samples: '3', idMark: 'P1A, 3, 4', grade: 'M-50', castingDate: '28-03-2025', age: '7', startDate: '04-04-2025', witness: 'No', link: '4', client: 'Satpanth Associates' },
-  { _id: generateId(), date: '01-04-2025', inwardNo: 'ARC/25-26/21', uniqueRef: '21--01', material: 'Concrete Cube', desc: 'Comp. Strength', samples: '3', idMark: 'P1A, 3, 4', grade: 'M-50', castingDate: '28-03-2025', age: '28', startDate: '25-04-2025', witness: 'No', link: '4', client: 'Satpanth Associates' },
-  { _id: generateId(), date: '01-04-2025', inwardNo: 'ARC/25-26/22', uniqueRef: '22--01', material: 'Concrete Cube', desc: 'Comp. Strength', samples: '3', idMark: 'P13, 155', grade: 'M-50', castingDate: '31-03-2025', age: '7', startDate: '07-04-2025', witness: 'No', link: '4', client: 'Satpanth Associates' },
-  { _id: generateId(), date: '01-04-2025', inwardNo: 'ARC/25-26/23', uniqueRef: '23--01', material: 'Concrete Cube', desc: 'Comp. Strength', samples: '3', idMark: 'P13, 155', grade: 'M-50', castingDate: '31-03-2025', age: '28', startDate: '28-04-2025', witness: 'No', link: '4', client: 'Satpanth Associates' },
-  { _id: generateId(), date: '04-04-2025', inwardNo: 'ARC/25-26/141', uniqueRef: '141--01', material: 'Concrete Cube', desc: 'Comp. Strength', samples: '3', idMark: 'P57, 93, 210A', grade: 'M-30', castingDate: '27-03-2025', age: '8', startDate: '04-04-2025', witness: 'No', link: '29', client: 'Strut Infra' },
-  { _id: generateId(), date: '07-04-2025', inwardNo: 'ARC/25-26/278', uniqueRef: '278--01', material: 'Concrete Cube', desc: 'Comp. Strength', samples: '3', idMark: '7th Floor Slab', grade: 'M-45', castingDate: '04-04-2025', age: '7', startDate: '11-04-2025', witness: 'No', link: '47', client: 'Stone Tech Infra' },
-];
-
-const INITIAL_JOBS = [
-  { _id: generateId(), srNo: '16', month: 'Apr-25', letterDate: '01-04-2025', inwardDate: '01-04-2025', site: 'Shreeji Eternity, Near Mithchauki', location: 'Malad (West)', client: 'Satpanth Associates', testRef: 'ARC/25-26/16', jobNo: 'SP:03/01-04', material: 'Concrete Cube', desc: 'Comp. Strength', count: '1' },
-  { _id: generateId(), srNo: '17', month: 'Apr-25', letterDate: '01-04-2025', inwardDate: '01-04-2025', site: 'Shreeji Eternity, Near Mithchauki', location: 'Malad (West)', client: 'Satpanth Associates', testRef: 'ARC/25-26/17', jobNo: 'SP:03/01-04', material: 'Concrete Cube', desc: 'Comp. Strength', count: '1' },
-  { _id: generateId(), srNo: '18', month: 'Apr-25', letterDate: '01-04-2025', inwardDate: '01-04-2025', site: 'Shreeji Eternity, Near Mithchauki', location: 'Malad (West)', client: 'Satpanth Associates', testRef: 'ARC/25-26/18', jobNo: 'SP:03/01-04', material: 'Concrete Cube', desc: 'Comp. Strength', count: '1' },
-  { _id: generateId(), srNo: '19', month: 'Apr-25', letterDate: '01-04-2025', inwardDate: '01-04-2025', site: 'Shreeji Eternity, Near Mithchauki', location: 'Malad (West)', client: 'Satpanth Associates', testRef: 'ARC/25-26/19', jobNo: 'SP:03/01-04', material: 'Concrete Cube', desc: 'Comp. Strength', count: '1' },
-  { _id: generateId(), srNo: '20', month: 'Apr-25', letterDate: '01-04-2025', inwardDate: '01-04-2025', site: 'Shreeji Eternity, Near Mithchauki', location: 'Malad (West)', client: 'Satpanth Associates', testRef: 'ARC/25-26/20', jobNo: 'SP:03/01-04', material: 'Concrete Cube', desc: 'Comp. Strength', count: '1' },
-  { _id: generateId(), srNo: '21', month: 'Apr-25', letterDate: '01-04-2025', inwardDate: '01-04-2025', site: 'Shreeji Eternity, Near Mithchauki', location: 'Malad (West)', client: 'Satpanth Associates', testRef: 'ARC/25-26/21', jobNo: 'SP:03/01-04', material: 'Concrete Cube', desc: 'Comp. Strength', count: '1' },
-  { _id: generateId(), srNo: '22', month: 'Apr-25', letterDate: '01-04-2025', inwardDate: '01-04-2025', site: 'Shreeji Eternity, Near Mithchauki', location: 'Malad (West)', client: 'Satpanth Associates', testRef: 'ARC/25-26/22', jobNo: 'SP:03/01-04', material: 'Concrete Cube', desc: 'Comp. Strength', count: '1' },
-  { _id: generateId(), srNo: '23', month: 'Apr-25', letterDate: '01-04-2025', inwardDate: '01-04-2025', site: 'Shreeji Eternity, Near Mithchauki', location: 'Malad (West)', client: 'Satpanth Associates', testRef: 'ARC/25-26/23', jobNo: 'SP:03/01-04', material: 'Concrete Cube', desc: 'Comp. Strength', count: '1' },
-  { _id: generateId(), srNo: '231', month: 'Apr-25', letterDate: '04-04-2025', inwardDate: '04-04-2025', site: 'Chandak Realtors, Kripa Nagar', location: 'Vile Parle (West)', client: 'Strut Infra', testRef: 'ARC/25-26/141', jobNo: 'SP:02/04-04', material: 'Concrete Cube', desc: 'Comp. Strength', count: '1' },
-  { _id: generateId(), srNo: '509', month: 'Apr-25', letterDate: '07-04-2025', inwardDate: '08-04-2025', site: 'Seven Fold, Junction of Sharddhanand Road', location: 'Vile Parle (East)', client: 'Stone Tech Infra', testRef: 'ARC/25-26/278', jobNo: 'SP:06/07-04', material: 'Concrete Cube', desc: 'Comp. Strength', count: '1' },
-];
-
-const INITIAL_FILES = {
-  '16--01': '16--01.pdf', 
-  '278--01': '278--01.pdf' 
+const COLLECTION_ENDPOINTS = {
+  clients: '/api/clients',
+  sites: '/api/sites',
+  tests: '/api/tests',
+  jobs: '/api/jobs',
 };
 
 // --- APP COMPONENT ---
@@ -172,29 +146,216 @@ export default function App() {
   
   // Data State
   const [clients, setClients] = useState([]);
-  const [sites, setSites] = useState(INITIAL_SITES);
-  const [tests, setTests] = useState(INITIAL_TESTS);
-  const [jobs, setJobs] = useState(INITIAL_JOBS);
-  const [uploadedFiles, setUploadedFiles] = useState(INITIAL_FILES);
+  const [sites, setSites] = useState([]);
+  const [tests, setTests] = useState([]);
+  const [jobs, setJobs] = useState([]);
+  const [uploadedFiles, setUploadedFiles] = useState({});
+  const showNotification = useCallback((message, type = 'success') => {
+    setNotification({ message, type });
+    setTimeout(() => setNotification(null), 3000);
+  }, []);
 
-  // Fetch Clients from Database
+  const fetchCollection = useCallback(async (type, setter, errorMessage) => {
+    const endpoint = COLLECTION_ENDPOINTS[type];
+    if (!endpoint) {
+      showNotification('Unknown record type.', 'error');
+      return;
+    }
+    try {
+      const response = await fetch(endpoint);
+      if (!response.ok) {
+        throw new Error(errorMessage);
+      }
+      const data = await response.json();
+      setter(Array.isArray(data) ? data : []);
+    } catch (error) {
+      console.error(`Error connecting to ${type} database:`, error);
+      showNotification(errorMessage, 'error');
+    }
+  }, [showNotification]);
+
+  // Fetch Collections from Database
   useEffect(() => {
-    const fetchClients = async () => {
+    fetchCollection('clients', setClients, 'Error loading client data.');
+  }, [fetchCollection]);
+
+  useEffect(() => {
+    fetchCollection('sites', setSites, 'Error loading site records.');
+  }, [fetchCollection]);
+
+  useEffect(() => {
+    fetchCollection('tests', setTests, 'Error loading test records.');
+  }, [fetchCollection]);
+
+  useEffect(() => {
+    fetchCollection('jobs', setJobs, 'Error loading job records.');
+  }, [fetchCollection]);
+
+  useEffect(() => {
+    const fetchDocuments = async () => {
       try {
-        const response = await fetch('/api/clients');
-        if (response.ok) {
-          const data = await response.json();
-          setClients(data);
-        } else {
-          console.error("Failed to fetch clients from database.");
+        const response = await fetch('/api/client-documents');
+        if (!response.ok) {
+          return;
+        }
+
+        const data = await response.json();
+        if (!Array.isArray(data)) {
+          return;
+        }
+
+        const mapped = data.reduce((acc, doc) => {
+          if (doc.testRef && !acc[doc.testRef]) {
+            acc[doc.testRef] = {
+              fileName: doc.fileName,
+              downloadUrl: doc.downloadUrl,
+            };
+          }
+          return acc;
+        }, {});
+
+        if (Object.keys(mapped).length) {
+          setUploadedFiles((prev) => ({
+            ...prev,
+            ...mapped,
+          }));
         }
       } catch (error) {
-        console.error("Error connecting to client database:", error);
-        setNotification({ message: 'Error loading live client data.', type: 'error' });
+        console.error("Error connecting to document database:", error);
       }
     };
-    fetchClients();
+
+    fetchDocuments();
   }, []);
+
+  const requestJson = useCallback(async (url, options, fallbackMessage) => {
+    const response = await fetch(url, options);
+    if (!response.ok) {
+      let message = fallbackMessage;
+      try {
+        const err = await response.json();
+        if (err?.message) {
+          message = err.message;
+        }
+      } catch {
+        // Ignore JSON parsing errors.
+      }
+      throw new Error(message);
+    }
+
+    if (response.status === 204) {
+      return null;
+    }
+
+    return response.json();
+  }, []);
+
+  const updateStateByType = useCallback((type, updater) => {
+    switch (type) {
+      case 'clients': setClients(updater); break;
+      case 'sites': setSites(updater); break;
+      case 'tests': setTests(updater); break;
+      case 'jobs': setJobs(updater); break;
+      default: break;
+    }
+  }, []);
+
+  const handleRecordUpdate = useCallback(async (type, record) => {
+    if (!record || !record._id) {
+      showNotification('Record id is missing.', 'error');
+      return false;
+    }
+
+    const endpoint = COLLECTION_ENDPOINTS[type];
+    if (!endpoint) {
+      showNotification('Unknown record type.', 'error');
+      return false;
+    }
+
+    try {
+      const updated = await requestJson(
+        endpoint,
+        {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(record),
+        },
+        'Unable to update record.'
+      );
+
+      updateStateByType(type, (prev) => prev.map((item) => (item._id === updated._id ? updated : item)));
+      showNotification('Record updated successfully.');
+      return true;
+    } catch (error) {
+      showNotification(error.message || 'Unable to update record.', 'error');
+      return false;
+    }
+  }, [requestJson, showNotification, updateStateByType]);
+
+  const handleRecordDelete = useCallback(async (type, ids) => {
+    if (!Array.isArray(ids) || !ids.length) {
+      return false;
+    }
+
+    const endpoint = COLLECTION_ENDPOINTS[type];
+    if (!endpoint) {
+      showNotification('Unknown record type.', 'error');
+      return false;
+    }
+
+    try {
+      await requestJson(
+        endpoint,
+        {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ids }),
+        },
+        'Unable to delete records.'
+      );
+
+      updateStateByType(type, (prev) => prev.filter((item) => !ids.includes(item._id)));
+      showNotification('Records deleted successfully.');
+      return true;
+    } catch (error) {
+      showNotification(error.message || 'Unable to delete records.', 'error');
+      return false;
+    }
+  }, [requestJson, showNotification, updateStateByType]);
+
+  const handleRecordCreate = useCallback(async (type, records) => {
+    const endpoint = COLLECTION_ENDPOINTS[type];
+    if (!endpoint) {
+      showNotification('Unknown record type.', 'error');
+      return [];
+    }
+
+    const payload = Array.isArray(records) ? records : [records];
+    if (!payload.length) {
+      return [];
+    }
+
+    try {
+      const created = await requestJson(
+        endpoint,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        },
+        'Unable to create records.'
+      );
+
+      const createdList = Array.isArray(created) ? created : created ? [created] : [];
+      if (createdList.length) {
+        updateStateByType(type, (prev) => [...prev, ...createdList]);
+      }
+      return createdList;
+    } catch (error) {
+      showNotification(error.message || 'Unable to create records.', 'error');
+      return [];
+    }
+  }, [requestJson, showNotification, updateStateByType]);
 
   const resolveIdentityUser = useCallback((identityUser, intentRole = null) => {
     if (!identityUser) return;
@@ -324,22 +485,6 @@ export default function App() {
 
   // --- ACTIONS ---
 
-  const showNotification = (message, type = 'success') => {
-    setNotification({ message, type });
-    setTimeout(() => setNotification(null), 3000);
-  };
-
-  const handleDataUpdate = (type, updatedData) => {
-    switch (type) {
-      case 'clients': setClients(updatedData); break;
-      case 'sites': setSites(updatedData); break;
-      case 'tests': setTests(updatedData); break;
-      case 'jobs': setJobs(updatedData); break;
-      case 'files': setUploadedFiles(updatedData); break;
-      default: break;
-    }
-  };
-
   const handleLogin = async (type, credentials) => {
     setLoginRole(type);
 
@@ -411,67 +556,115 @@ export default function App() {
     identityIntentRef.current = null;
   };
 
-  const handleBulkImport = (dataType, textData) => {
-    try {
-      const rows = textData.trim().split('\n').map(row => row.split('\t'));
-      
-      if (dataType === 'clients') {
-        const newRecs = rows.map(r => ({
-          _id: generateId(),
-          id: r[0], title: r[1], category: r[2], street: r[3], location: r[4], 
-          city: r[5], pincode: r[6], state: r[7], salesPerson: r[8], 
-          salesEmail: r[9], gst: r[10], tds: r[11], email: r[12]
-        }));
-        setClients([...clients, ...newRecs]);
-      } 
-      else if (dataType === 'sites') {
-        const newRecs = rows.map(r => ({
-          _id: generateId(),
-          clientName: r[0], address: r[1], location: r[2], email: r[3]
-        }));
-        setSites([...sites, ...newRecs]);
-      }
-      else if (dataType === 'tests') {
-        const newRecs = rows.map(r => ({
-          _id: generateId(),
-          date: normalizeDate(r[0]), 
-          inwardNo: r[1], uniqueRef: r[2], material: r[3], 
-          desc: r[4], samples: r[5], idMark: r[6], grade: r[7], 
-          castingDate: normalizeDate(r[8]), 
-          age: r[9], 
-          startDate: normalizeDate(r[10]), 
-          witness: r[11], 
-          link: r[12], client: r[13]
-        }));
-        setTests([...tests, ...newRecs]);
-      }
-      else if (dataType === 'jobs') {
-        const newRecs = rows.map(r => ({
-          _id: generateId(),
-          srNo: r[0], month: r[1], 
-          letterDate: normalizeDate(r[2]), 
-          inwardDate: normalizeDate(r[3]), 
-          site: r[4], location: r[5], client: r[6], testRef: r[7], 
-          jobNo: r[8], material: r[9], desc: r[10], count: r[11]
-        }));
-        setJobs([...jobs, ...newRecs]);
-      }
-      showNotification(`Successfully imported ${rows.length} rows into ${dataType}.`);
-    } catch (e) {
-      showNotification('Error importing data. Please check format.', 'error');
+  const handleBulkImport = async (dataType, textData) => {
+    const trimmed = textData.trim();
+    if (!trimmed) {
+      showNotification('Paste data to import.', 'error');
+      return;
+    }
+
+    const rows = trimmed
+      .split('\n')
+      .map(row => row.split('\t'))
+      .filter(row => row.some(cell => String(cell || '').trim().length));
+
+    let newRecs = [];
+
+    if (dataType === 'clients') {
+      newRecs = rows.map(r => ({
+        id: r[0], title: r[1], category: r[2], street: r[3], location: r[4], 
+        city: r[5], pincode: r[6], state: r[7], salesPerson: r[8], 
+        salesEmail: r[9], gst: r[10], tds: r[11], email: r[12]
+      }));
+    } else if (dataType === 'sites') {
+      newRecs = rows.map(r => ({
+        clientName: r[0], address: r[1], location: r[2], email: r[3]
+      }));
+    } else if (dataType === 'tests') {
+      newRecs = rows.map(r => ({
+        date: normalizeDate(r[0]), 
+        inwardNo: r[1], uniqueRef: r[2], material: r[3], 
+        desc: r[4], samples: r[5], idMark: r[6], grade: r[7], 
+        castingDate: normalizeDate(r[8]), 
+        age: r[9], 
+        startDate: normalizeDate(r[10]), 
+        witness: r[11], 
+        link: r[12], client: r[13]
+      }));
+    } else if (dataType === 'jobs') {
+      newRecs = rows.map(r => ({
+        srNo: r[0], month: r[1], 
+        letterDate: normalizeDate(r[2]), 
+        inwardDate: normalizeDate(r[3]), 
+        site: r[4], location: r[5], client: r[6], testRef: r[7], 
+        jobNo: r[8], material: r[9], desc: r[10], count: r[11]
+      }));
+    } else {
+      showNotification('Unsupported import type.', 'error');
+      return;
+    }
+
+    if (!newRecs.length) {
+      showNotification('No rows detected in the import.', 'error');
+      return;
+    }
+
+    const created = await handleRecordCreate(dataType, newRecs);
+    if (created.length) {
+      showNotification(`Successfully imported ${created.length} rows into ${dataType}.`);
     }
   };
 
-  const handleFileUpload = (fileName) => {
-    const refId = fileName.split('.')[0];
-    const isValidRef = tests.some(t => t.uniqueRef === refId);
-    
-    if (isValidRef) {
-      setUploadedFiles(prev => ({ ...prev, [refId]: fileName }));
-      showNotification(`File matched to Record ${refId} and uploaded.`);
-    } else {
-      setUploadedFiles(prev => ({ ...prev, [refId]: fileName }));
-      showNotification(`File stored but Unique Ref "${refId}" not found.`, 'error');
+  const handleFileUpload = async (file, overrideRef = '') => {
+    if (!file) {
+      showNotification('Select a report file to upload.', 'error');
+      return;
+    }
+
+    const refId = (overrideRef || file.name.split('.')[0]).trim();
+    if (!refId) {
+      showNotification('Add a Test Ref or use a filename like 16--01.pdf.', 'error');
+      return;
+    }
+
+    try {
+      const base64 = await readFileAsBase64(file);
+      const payload = {
+        fileName: file.name,
+        testRef: refId,
+        contentType: file.type || 'application/pdf',
+        data: base64,
+      };
+
+      const response = await fetch('/api/client-documents', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({}));
+        throw new Error(err.message || 'Upload failed.');
+      }
+
+      const stored = await response.json();
+      const isValidRef = tests.some(t => t.uniqueRef === refId);
+
+      setUploadedFiles(prev => ({
+        ...prev,
+        [refId]: {
+          fileName: stored.fileName || file.name,
+          downloadUrl: stored.downloadUrl,
+        },
+      }));
+
+      if (isValidRef) {
+        showNotification(`File matched to Record ${refId} and uploaded.`);
+      } else {
+        showNotification(`File stored but Unique Ref "${refId}" not found.`, 'error');
+      }
+    } catch (error) {
+      showNotification(error.message || 'Unable to upload file.', 'error');
     }
   };
 
@@ -502,7 +695,8 @@ export default function App() {
           user={user} 
           onLogout={handleLogout}
           data={{ clients, sites, tests, jobs, uploadedFiles }}
-          onDataUpdate={handleDataUpdate}
+          onUpdateRow={handleRecordUpdate}
+          onDeleteRows={handleRecordDelete}
           onImport={handleBulkImport}
           onFileUpload={handleFileUpload}
           showNotification={showNotification}
@@ -521,7 +715,8 @@ export default function App() {
 
 // --- SMART TABLE COMPONENT (New Feature) ---
 
-function SmartTable({ data, columns, onUpdate, onDelete, showNotification }) {
+function SmartTable({ data, columns, onUpdateRow, onDeleteRows, showNotification }) {
+  const safeData = Array.isArray(data) ? data : [];
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(10);
@@ -531,14 +726,14 @@ function SmartTable({ data, columns, onUpdate, onDelete, showNotification }) {
 
   // Filter
   const filteredData = useMemo(() => {
-    if (!searchTerm) return data;
+    if (!searchTerm) return safeData;
     const lowerTerm = searchTerm.toLowerCase();
-    return data.filter(item => 
+    return safeData.filter(item => 
       Object.values(item).some(val => 
         String(val).toLowerCase().includes(lowerTerm)
       )
     );
-  }, [data, searchTerm]);
+  }, [safeData, searchTerm]);
 
   // Paginate
   const totalPages = Math.ceil(filteredData.length / rowsPerPage);
@@ -550,13 +745,15 @@ function SmartTable({ data, columns, onUpdate, onDelete, showNotification }) {
   // Selection
   const handleSelectAll = (e) => {
     if (e.target.checked) {
-      setSelectedIds(new Set(paginatedData.map(d => d._id)));
+      const ids = paginatedData.map(d => d._id).filter(Boolean);
+      setSelectedIds(new Set(ids));
     } else {
       setSelectedIds(new Set());
     }
   };
 
   const handleSelectRow = (id) => {
+    if (!id) return;
     const newSelected = new Set(selectedIds);
     if (newSelected.has(id)) newSelected.delete(id);
     else newSelected.add(id);
@@ -568,20 +765,29 @@ function SmartTable({ data, columns, onUpdate, onDelete, showNotification }) {
     setShowDeleteConfirm(true); // Open Modal
   };
 
-  const confirmDelete = () => {
-    const remainingData = data.filter(d => !selectedIds.has(d._id));
-    onUpdate(remainingData);
-    setSelectedIds(new Set());
-    setShowDeleteConfirm(false);
-    if (showNotification) showNotification('Records deleted successfully.');
+  const confirmDelete = async () => {
+    if (!onDeleteRows) return;
+    const ids = Array.from(selectedIds);
+    const success = await onDeleteRows(ids);
+    if (success) {
+      setSelectedIds(new Set());
+      setShowDeleteConfirm(false);
+    }
   };
 
-  const handleSaveEdit = (e) => {
+  const handleSaveEdit = async (e) => {
     e.preventDefault();
-    const updatedData = data.map(d => d._id === editingItem._id ? editingItem : d);
-    onUpdate(updatedData);
-    setEditingItem(null);
-    if (showNotification) showNotification('Record updated successfully.');
+    if (!editingItem?._id) {
+      if (showNotification) showNotification('Record id is missing.', 'error');
+      return;
+    }
+
+    if (onUpdateRow) {
+      const success = await onUpdateRow(editingItem);
+      if (success) {
+        setEditingItem(null);
+      }
+    }
   };
 
   return (
@@ -921,11 +1127,13 @@ function LoginPage({ onLogin, onBack, initialRole = 'client', onRoleChange }) {
   );
 }
 
-function EmployeeDashboard({ user, onLogout, data, onDataUpdate, onImport, onFileUpload, showNotification }) {
+function EmployeeDashboard({ user, onLogout, data, onUpdateRow, onDeleteRows, onImport, onFileUpload, showNotification }) {
   const [activeTab, setActiveTab] = useState('clients');
   const [showImport, setShowImport] = useState(false);
   const [importText, setImportText] = useState('');
-  const [fileInput, setFileInput] = useState('');
+  const [fileInput, setFileInput] = useState(null);
+  const [fileRef, setFileRef] = useState('');
+  const fileInputRef = useRef(null);
 
   // Define Columns for SmartTable
   const clientCols = [
@@ -951,13 +1159,13 @@ function EmployeeDashboard({ user, onLogout, data, onDataUpdate, onImport, onFil
   const renderContent = () => {
     switch (activeTab) {
       case 'clients': 
-        return <SmartTable data={data.clients} columns={clientCols} onUpdate={(d) => onDataUpdate('clients', d)} showNotification={showNotification} />;
+        return <SmartTable data={data.clients} columns={clientCols} onUpdateRow={(item) => onUpdateRow('clients', item)} onDeleteRows={(ids) => onDeleteRows('clients', ids)} showNotification={showNotification} />;
       case 'sites': 
-        return <SmartTable data={data.sites} columns={siteCols} onUpdate={(d) => onDataUpdate('sites', d)} showNotification={showNotification} />;
+        return <SmartTable data={data.sites} columns={siteCols} onUpdateRow={(item) => onUpdateRow('sites', item)} onDeleteRows={(ids) => onDeleteRows('sites', ids)} showNotification={showNotification} />;
       case 'tests': 
-        return <SmartTable data={data.tests} columns={testCols} onUpdate={(d) => onDataUpdate('tests', d)} showNotification={showNotification} />;
+        return <SmartTable data={data.tests} columns={testCols} onUpdateRow={(item) => onUpdateRow('tests', item)} onDeleteRows={(ids) => onDeleteRows('tests', ids)} showNotification={showNotification} />;
       case 'jobs': 
-        return <SmartTable data={data.jobs} columns={jobCols} onUpdate={(d) => onDataUpdate('jobs', d)} showNotification={showNotification} />;
+        return <SmartTable data={data.jobs} columns={jobCols} onUpdateRow={(item) => onUpdateRow('jobs', item)} onDeleteRows={(ids) => onDeleteRows('jobs', ids)} showNotification={showNotification} />;
       case 'files': 
         return <FileTable files={data.uploadedFiles} />;
       default: return null;
@@ -966,9 +1174,17 @@ function EmployeeDashboard({ user, onLogout, data, onDataUpdate, onImport, onFil
 
   const handleFileSubmit = (e) => {
     e.preventDefault();
-    if (!fileInput) return;
-    onFileUpload(fileInput);
-    setFileInput('');
+    if (!fileInput) {
+      showNotification('Select a PDF to upload.', 'error');
+      return;
+    }
+
+    onFileUpload(fileInput, fileRef);
+    setFileInput(null);
+    setFileRef('');
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
   };
 
   return (
@@ -1004,12 +1220,19 @@ function EmployeeDashboard({ user, onLogout, data, onDataUpdate, onImport, onFil
           <div className="flex gap-2 w-full md:w-auto">
             {activeTab === 'files' ? (
               <form onSubmit={handleFileSubmit} className="flex gap-2 w-full">
-                 <input 
-                  type="text" 
-                  placeholder="Enter filename (e.g., 16--01.pdf)"
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".pdf,application/pdf"
                   className="px-3 py-2 border border-slate-300 rounded-md text-sm w-full md:w-64 shadow-sm focus:ring-2 focus:ring-green-500 outline-none"
-                  value={fileInput}
-                  onChange={e => setFileInput(e.target.value)}
+                  onChange={(e) => setFileInput(e.target.files?.[0] || null)}
+                />
+                <input
+                  type="text"
+                  placeholder="Optional Test Ref (e.g., 16--01)"
+                  className="px-3 py-2 border border-slate-300 rounded-md text-sm w-full md:w-52 shadow-sm focus:ring-2 focus:ring-green-500 outline-none"
+                  value={fileRef}
+                  onChange={(e) => setFileRef(e.target.value)}
                 />
                 <button type="submit" className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-medium shadow-sm transition-colors whitespace-nowrap">
                   <Upload size={16} /> Upload
@@ -1091,9 +1314,10 @@ function ClientDashboard({ user, onLogout, data }) {
       let testParam = 'N/A';
 
       if (testRec) {
-        if (data.uploadedFiles[testRec.uniqueRef]) {
+        const fileEntry = data.uploadedFiles[testRec.uniqueRef];
+        if (fileEntry) {
           fileStatus = 'Ready';
-          fileLink = data.uploadedFiles[testRec.uniqueRef];
+          fileLink = fileEntry;
         }
         
         const startDateObj = parseDateString(testRec.startDate);
@@ -1202,33 +1426,50 @@ function ClientDashboard({ user, onLogout, data }) {
               </thead>
               <tbody>
                 {clientData.length > 0 ? (
-                  clientData.map((row, idx) => (
-                    <tr key={idx} className="bg-white border-b hover:bg-slate-50">
-                      <td className="px-4 py-3 font-medium text-slate-900">{row.jobNo}</td>
-                      <td className="px-4 py-3 text-slate-500 font-mono text-xs">{row.testRef}</td>
-                      <td className="px-4 py-3">{row.dateRec}</td>
-                      <td className="px-4 py-3">{row.material}</td>
-                      <td className="px-4 py-3">{row.testParam}</td>
-                      <td className="px-4 py-3 max-w-[150px] truncate" title={row.id}>{row.id}</td>
-                      <td className="px-4 py-3">{row.grade}</td>
-                      <td className="px-4 py-3">{row.age}</td>
-                      <td className="px-4 py-3">{row.resultDate}</td>
-                      <td className="px-4 py-3 text-center">
-                        {row.status === 'Ready' ? (
-                          <button 
-                            onClick={() => alert(`Downloading ${row.file}...`)}
-                            className="inline-flex items-center gap-1 text-xs font-medium text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 px-2 py-1 rounded border border-blue-200"
-                          >
-                            <Download size={12} /> PDF
-                          </button>
-                        ) : (
-                          <span className="inline-flex items-center gap-1 text-xs font-medium text-amber-600 bg-amber-50 px-2 py-1 rounded border border-amber-200">
-                            <AlertCircle size={12} /> Pending
-                          </span>
-                        )}
-                      </td>
-                    </tr>
-                  ))
+                  clientData.map((row, idx) => {
+                    const fileInfo = row.file;
+                    const fileName = typeof fileInfo === 'string' ? fileInfo : fileInfo?.fileName;
+                    const fileUrl = typeof fileInfo === 'string' ? null : fileInfo?.downloadUrl;
+
+                    return (
+                      <tr key={idx} className="bg-white border-b hover:bg-slate-50">
+                        <td className="px-4 py-3 font-medium text-slate-900">{row.jobNo}</td>
+                        <td className="px-4 py-3 text-slate-500 font-mono text-xs">{row.testRef}</td>
+                        <td className="px-4 py-3">{row.dateRec}</td>
+                        <td className="px-4 py-3">{row.material}</td>
+                        <td className="px-4 py-3">{row.testParam}</td>
+                        <td className="px-4 py-3 max-w-[150px] truncate" title={row.id}>{row.id}</td>
+                        <td className="px-4 py-3">{row.grade}</td>
+                        <td className="px-4 py-3">{row.age}</td>
+                        <td className="px-4 py-3">{row.resultDate}</td>
+                        <td className="px-4 py-3 text-center">
+                          {row.status === 'Ready' ? (
+                            fileUrl ? (
+                              <a
+                                href={fileUrl}
+                                target="_blank"
+                                rel="noopener"
+                                className="inline-flex items-center gap-1 text-xs font-medium text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 px-2 py-1 rounded border border-blue-200"
+                              >
+                                <Download size={12} /> PDF
+                              </a>
+                            ) : (
+                              <button
+                                onClick={() => alert(`Downloading ${fileName || 'report'}...`)}
+                                className="inline-flex items-center gap-1 text-xs font-medium text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 px-2 py-1 rounded border border-blue-200"
+                              >
+                                <Download size={12} /> PDF
+                              </button>
+                            )
+                          ) : (
+                            <span className="inline-flex items-center gap-1 text-xs font-medium text-amber-600 bg-amber-50 px-2 py-1 rounded border border-amber-200">
+                              <AlertCircle size={12} /> Pending
+                            </span>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })
                 ) : (
                   <tr>
                     <td colSpan="12" className="px-4 py-8 text-center text-slate-400 italic">No records found for this project.</td>
@@ -1244,7 +1485,7 @@ function ClientDashboard({ user, onLogout, data }) {
 }
 
 function FileTable({ files }) {
-  const entries = Object.entries(files);
+  const entries = Object.entries(files || {});
   return (
     <div className="bg-white rounded-lg border border-slate-200 overflow-hidden shadow-sm">
       <div className="overflow-x-auto">
@@ -1257,18 +1498,21 @@ function FileTable({ files }) {
             </tr>
           </thead>
           <tbody>
-            {entries.map(([ref, name], i) => (
+            {entries.map(([ref, value], i) => {
+              const fileName = typeof value === 'string' ? value : value?.fileName;
+              return (
               <tr key={i} className="bg-white border-b hover:bg-slate-50">
                 <td className="px-4 py-3 font-mono font-medium text-slate-900">{ref}</td>
                 <td className="px-4 py-3 flex items-center gap-2">
                   <FileCheck size={16} className="text-blue-500" />
-                  {name}
+                  {fileName || 'Unnamed file'}
                 </td>
                 <td className="px-4 py-3">
                   <span className="bg-green-100 text-green-800 text-xs font-medium px-2.5 py-0.5 rounded border border-green-200">Uploaded</span>
                 </td>
               </tr>
-            ))}
+              );
+            })}
             {entries.length === 0 && (
               <tr><td colSpan="3" className="p-4 text-center text-slate-400">No files uploaded yet.</td></tr>
             )}

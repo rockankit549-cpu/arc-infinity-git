@@ -21,6 +21,36 @@
   force = true
 
 [[redirects]]
+  from = "/api/clients"
+  to = "/.netlify/functions/clients"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/sites"
+  to = "/.netlify/functions/sites"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/tests"
+  to = "/.netlify/functions/tests"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/jobs"
+  to = "/.netlify/functions/jobs"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/client-documents"
+  to = "/.netlify/functions/client-documents"
+  status = 200
+  force = true
+
+[[redirects]]
   from = "/login"
   to = "/login.html"
   status = 200
