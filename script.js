@@ -11,16 +11,25 @@ const DASHBOARD_PATH = '/client-dashboard';
 const DASHBOARD_HTML_PATH = '/client-dashboard.html';
 const EMPLOYEE_PORTAL_PATH = '/employee-portal';
 const EMPLOYEE_PORTAL_HTML_PATH = '/employee-portal.html';
-const LOGIN_HTML_PATH = '/login.html';
 const IDENTITY_SESSION_COOKIE = 'arc_identity_session';
 
 const buildPortalLoginUrl = (role = 'client') => {
-    const params = new URLSearchParams();
-    if (role === 'employee') {
-        params.set('role', 'employee');
-    }
-    const query = params.toString();
-    return `${LOGIN_HTML_PATH}${query ? `?${query}` : ''}`;
+    const params = new URLSearchParams({
+        view: 'login',
+        role: role === 'employee' ? 'employee' : 'client'
+    });
+    return `${EMPLOYEE_PORTAL_HTML_PATH}?${params.toString()}`;
+};
+
+const redirectToPortalLogin = (role = 'client') => {
+    if (typeof window === 'undefined') return;
+    window.location.href = buildPortalLoginUrl(role);
+};
+
+const attachPortalRedirect = (element, role = 'client') => {
+    if (!element || element.dataset.portalRedirectAttached === 'true') return;
+    element.dataset.portalRedirectAttached = 'true';
+    element.addEventListener('click', () => redirectToPortalLogin(role));
 };
 
 const wirePortalLoginLinks = () => {
@@ -28,14 +37,14 @@ const wirePortalLoginLinks = () => {
     const portalLoginUrl = buildPortalLoginUrl('client');
     navLoginAnchors.forEach((link) => {
         if (!link) return;
-        const href = link.getAttribute('href');
-        if (!href || href === '#') {
-            link.setAttribute('href', portalLoginUrl);
-        }
+        link.setAttribute('href', portalLoginUrl);
         if (!link.dataset.defaultHref) {
-            link.dataset.defaultHref = link.getAttribute('href') || portalLoginUrl;
+            link.dataset.defaultHref = portalLoginUrl;
         }
     });
+
+    attachPortalRedirect(document.getElementById('identity-login-btn'), 'client');
+    attachPortalRedirect(document.getElementById('identity-employee-login-btn'), 'employee');
 };
 
 if (typeof document !== 'undefined') {
@@ -961,8 +970,8 @@ const initNetlifyIdentityWidget = () => {
             const href = link.getAttribute('href');
             const resolvedHref = (href && href !== '#') ? href : defaultPortalHref;
             link.dataset.defaultHref = resolvedHref;
-            if (!href || href === '#') {
-                link.setAttribute('href', resolvedHref);
+            if (href === 'login.html' || href === '/login.html') {
+                link.setAttribute('href', defaultPortalHref);
             }
         }
         if (link && !link.dataset.defaultDisplay) {
@@ -1127,25 +1136,12 @@ const initNetlifyIdentityWidget = () => {
         window.location.href = homeTarget;
     });
 
-    const openIdentityLogin = (role) => {
-        loginIntent = role === 'employee' ? 'employee' : 'client';
-        if (typeof netlifyIdentity.open === 'function') {
-            netlifyIdentity.open('login');
-        }
-    };
-
     if (loginBtn) {
-        loginBtn.addEventListener('click', (event) => {
-            event.preventDefault();
-            openIdentityLogin('client');
-        });
+        attachPortalRedirect(loginBtn, 'client');
     }
 
     if (employeeLoginBtn) {
-        employeeLoginBtn.addEventListener('click', (event) => {
-            event.preventDefault();
-            openIdentityLogin('employee');
-        });
+        attachPortalRedirect(employeeLoginBtn, 'employee');
     }
 
     netlifyIdentity.on('close', () => {
