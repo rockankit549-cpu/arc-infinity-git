@@ -11,6 +11,7 @@ const DASHBOARD_PATH = '/client-dashboard';
 const DASHBOARD_HTML_PATH = '/client-dashboard.html';
 const EMPLOYEE_PORTAL_PATH = '/employee-portal';
 const EMPLOYEE_PORTAL_HTML_PATH = '/employee-portal.html';
+const IDENTITY_SESSION_COOKIE = 'arc_identity_session';
 
 const buildPortalLoginUrl = (role = 'client') => {
     const params = new URLSearchParams({
@@ -80,6 +81,52 @@ const writeStoredJSON = (key, value) => {
     }
 };
 
+const hasIdentitySessionCookie = () => {
+    if (typeof document === 'undefined') return false;
+    return document.cookie
+        .split(';')
+        .some((part) => part.trim().startsWith(`${IDENTITY_SESSION_COOKIE}=`));
+};
+
+const setIdentitySessionCookie = () => {
+    if (typeof document === 'undefined') return;
+    const attributes = [
+        `${IDENTITY_SESSION_COOKIE}=active`,
+        'Path=/',
+        'SameSite=Strict',
+    ];
+    if (window.location?.protocol === 'https:') {
+        attributes.push('Secure');
+    }
+    document.cookie = attributes.join('; ');
+};
+
+const clearIdentitySessionCookie = () => {
+    if (typeof document === 'undefined') return;
+    const attributes = [
+        `${IDENTITY_SESSION_COOKIE}=`,
+        'Path=/',
+        'SameSite=Strict',
+        'Max-Age=0',
+    ];
+    if (window.location?.protocol === 'https:') {
+        attributes.push('Secure');
+    }
+    document.cookie = attributes.join('; ');
+};
+
+const clearStoredSession = () => {
+    try {
+        localStorage.removeItem('arc_session');
+        localStorage.removeItem('isLoggedIn');
+        localStorage.removeItem('userData');
+        localStorage.removeItem(CUSTOMER_PROFILE_KEY);
+        localStorage.removeItem(EMPLOYEE_PROFILE_KEY);
+    } catch {
+        // Ignore storage cleanup failures.
+    }
+};
+
 const formatNameFromEmail = (email) => {
     if (!email) return 'ARC Client';
     const base = email.split('@')[0] || email;
@@ -137,7 +184,8 @@ const isClientUser = (user) => {
 const checkUserLoginStatus = () => {
     const legacyFlag = localStorage.getItem('isLoggedIn') === 'true';
     const hasSession = Boolean(localStorage.getItem('arc_session'));
-    return Boolean(legacyFlag || hasSession || getStoredUserProfile());
+    const hasCookie = hasIdentitySessionCookie();
+    return Boolean(hasCookie && (legacyFlag || hasSession || getStoredUserProfile()));
 };
 
 const getUserData = () => {
@@ -887,7 +935,7 @@ const initNetlifyIdentityWidget = () => {
     const userEmail = document.getElementById('identity-user-email');
     const dashboardLogoutBtn = document.getElementById('dashboard-logout-btn');
     const dashboardUserEmail = document.getElementById('dashboard-user-email');
-    const navLoginLinks = document.querySelectorAll('.mobile-login-button');
+    const navLoginLinks = document.querySelectorAll('nav .nav-links .mobile-login-button');
     const defaultPortalHref = buildPortalLoginUrl('client');
     const employeePortalHref = buildPortalLoginUrl('employee');
     const isOnClientDashboard = (path) => {
@@ -904,7 +952,6 @@ const initNetlifyIdentityWidget = () => {
             path === EMPLOYEE_PORTAL_HTML_PATH
         );
     };
-    const onClientDashboard = isOnClientDashboard(window.location.pathname);
     let loginIntent = null;
     const protectedPaths = [
         DASHBOARD_PATH,
@@ -944,32 +991,19 @@ const initNetlifyIdentityWidget = () => {
 
     const updateNavLoginLinks = (user) => {
         const displayName = getIdentityDisplayName(user);
-        const isPortalView = onClientDashboard || isOnEmployeePortal(window.location.pathname);
         navLoginLinks.forEach((link) => {
             if (!link) return;
             if (user) {
-                if (isPortalView) {
-                    link.style.display = link.dataset.defaultDisplay || '';
-                    link.textContent = 'Logout';
-                    link.classList.add('nav-logout-link');
-                    link.removeAttribute('href');
-                    link.onclick = (event) => {
-                        event.preventDefault();
-                        netlifyIdentity.logout();
-                    };
-                    link.setAttribute('role', 'button');
-                    link.setAttribute('aria-label', displayName ? `Logout ${displayName}` : 'Logout');
-                } else {
-                    link.style.display = 'none';
-                    link.onclick = null;
-                    link.classList.remove('nav-logout-link');
-                    link.removeAttribute('role');
-                    if (displayName) {
-                        link.setAttribute('aria-label', `Logged in as ${displayName}`);
-                    } else {
-                        link.removeAttribute('aria-label');
-                    }
-                }
+                link.style.display = link.dataset.defaultDisplay || '';
+                link.textContent = 'Logout';
+                link.classList.add('nav-logout-link');
+                link.removeAttribute('href');
+                link.onclick = (event) => {
+                    event.preventDefault();
+                    netlifyIdentity.logout();
+                };
+                link.setAttribute('role', 'button');
+                link.setAttribute('aria-label', displayName ? `Logout ${displayName}` : 'Logout');
             } else {
                 link.style.display = link.dataset.defaultDisplay || '';
                 link.textContent = link.dataset.defaultText || 'Login';
@@ -1053,6 +1087,15 @@ const initNetlifyIdentityWidget = () => {
     };
 
     netlifyIdentity.on('init', (user) => {
+        if (user && !hasIdentitySessionCookie()) {
+            netlifyIdentity.logout();
+            return;
+        }
+        if (user) {
+            setIdentitySessionCookie();
+        } else {
+            clearIdentitySessionCookie();
+        }
         const effectiveUser = user || getStoredUserProfile();
         updatePortalUI(effectiveUser);
         guardProtectedPages(effectiveUser);
@@ -1070,6 +1113,7 @@ const initNetlifyIdentityWidget = () => {
             return;
         }
 
+        setIdentitySessionCookie();
         updatePortalUI(user);
         let targetPath = isEmployeeUser(user) ? EMPLOYEE_PORTAL_PATH : DASHBOARD_PATH;
         if (loginIntent === 'client') {
@@ -1085,6 +1129,8 @@ const initNetlifyIdentityWidget = () => {
     });
 
     netlifyIdentity.on('logout', () => {
+        clearIdentitySessionCookie();
+        clearStoredSession();
         updatePortalUI(null);
         const homeTarget = '/index.html#home';
         window.location.href = homeTarget;

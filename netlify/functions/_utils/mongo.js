@@ -4,9 +4,9 @@ let cachedClient;
 let cachedClientPromise;
 
 const getMongoDb = async () => {
-    const uri = process.env.MongoDB_URI ;
+    const uri = process.env.MONGODB_URI || process.env.MongoDB_URI;
     if (!uri) {
-        throw new Error('MONGODB_URI is not defined.');
+        throw new Error('MONGODB_URI (or MongoDB_URI) is not defined.');
     }
 
     if (!cachedClient) {
@@ -19,8 +19,8 @@ const getMongoDb = async () => {
 
     await cachedClientPromise;
 
-    const dbName = process.env.MongoDB_URI || 'WebReporting';
-    return cachedClient.db(dbName);
+    const dbName = process.env.MONGODB_DB || process.env.MongoDB_DB;
+    return dbName ? cachedClient.db(dbName) : cachedClient.db();
 };
 
 module.exports = {
