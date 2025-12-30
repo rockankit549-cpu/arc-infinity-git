@@ -28,6 +28,7 @@ import {
  */
 const SHEET_ID = '1YbQ2XY99mrEOTL83RtMVw61LJBgPe_ihP6nYhEoBM9I';
 const CSV_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv`;
+const SCRIPT_URL = 'REPLACE_WITH_YOUR_DEPLOYED_GOOGLE_APPS_SCRIPT_URL'; // TODO: Paste your Web App URL here
 const IDENTITY_SESSION_COOKIE = 'arc_identity_session';
 
 const hasIdentitySessionCookie = () => {
@@ -223,21 +224,54 @@ const App = () => {
     setIsAdding(true);
   };
 
-  const handleSave = () => {
-    // In a real app with a backend, we would send a POST/PUT request here.
-    // For now, we update local state to show the change.
-    if (isAdding) {
-      setData([formValues, ...data]);
-    } else {
-      setData(data.map(item => item === selectedRecord ? formValues : item));
-    }
+  const handleSave = async () => {
+    const action = isAdding ? 'add' : 'update';
+    const original = isAdding ? null : selectedRecord;
+
+    // Optimistic update (update UI immediately)
+    const newData = isAdding 
+      ? [formValues, ...data] 
+      : data.map(item => item === selectedRecord ? formValues : item);
     
+    setData(newData);
     setIsEditing(false);
     setIsAdding(false);
     setSelectedRecord(null);
-    
-    // Alert user that this is simulated
-    console.log("Saving to Sheet simulated:", formValues);
+
+    // Send to Google Sheet
+    if (SCRIPT_URL && !SCRIPT_URL.includes('REPLACE_WITH')) {
+      try {
+        await fetch(SCRIPT_URL, {
+          method: 'POST',
+          body: JSON.stringify({ action, data: formValues, original })
+        });
+        console.log('Synced with Google Sheet');
+      } catch (err) {
+        console.error('Failed to sync with Sheet:', err);
+        alert('Saved locally, but failed to sync with Google Sheet. Check console.');
+      }
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!selectedRecord) return;
+    if (!confirm('Are you sure you want to delete this record?')) return;
+
+    const original = selectedRecord;
+    setData(data.filter(item => item !== selectedRecord));
+    setSelectedRecord(null);
+    setIsEditing(false);
+
+    if (SCRIPT_URL && !SCRIPT_URL.includes('REPLACE_WITH')) {
+      try {
+        await fetch(SCRIPT_URL, {
+          method: 'POST',
+          body: JSON.stringify({ action: 'delete', original })
+        });
+      } catch (err) {
+        console.error('Failed to delete from Sheet:', err);
+      }
+    }
   };
 
   const handleExport = () => {
@@ -307,10 +341,6 @@ const App = () => {
               ) : (
                 // EDIT / ADD MODE
                 <div className="space-y-4">
-                  <div className="p-3 bg-amber-50 border border-amber-100 rounded-xl text-[11px] text-amber-700 mb-4 flex gap-2">
-                    <Info className="w-4 h-4 shrink-0" />
-                    <span><b>Note:</b> In this demo, changes are saved only in your browser. A backend script is needed to sync with Google Sheets.</span>
-                  </div>
                   {tableHeaders.map((header) => (
                     <div key={header} className="space-y-1">
                       <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">
@@ -333,7 +363,7 @@ const App = () => {
               {!isEditing && !isAdding ? (
                 <>
                   <button 
-                    onClick={() => { /* Simulation */ }}
+                    onClick={handleDelete}
                     className="flex items-center gap-2 text-red-500 text-sm font-bold hover:bg-red-50 px-4 py-2 rounded-xl transition-colors"
                   >
                     <Trash2 className="w-4 h-4" />
