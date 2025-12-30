@@ -33,9 +33,13 @@ const attachPortalRedirect = (element, role = 'client') => {
 };
 
 const wirePortalLoginLinks = () => {
-    const navLoginAnchors = document.querySelectorAll('nav .nav-links .mobile-login-button[href]');
+    const navLoginAnchors = Array.from(document.querySelectorAll('nav .nav-links [data-auth-action="login"][href]'));
+    const legacyLoginAnchors = navLoginAnchors.length
+        ? []
+        : Array.from(document.querySelectorAll('nav .nav-links .mobile-login-button[href]'));
+    const loginAnchors = navLoginAnchors.length ? navLoginAnchors : legacyLoginAnchors;
     const portalLoginUrl = buildPortalLoginUrl('client');
-    navLoginAnchors.forEach((link) => {
+    loginAnchors.forEach((link) => {
         if (!link) return;
         link.setAttribute('href', portalLoginUrl);
         if (!link.dataset.defaultHref) {
@@ -202,7 +206,7 @@ menuToggle.addEventListener('click', () => {
 });
 
 // Close mobile menu when clicking on a link
-document.querySelectorAll('.nav-links a').forEach(link => {
+document.querySelectorAll('.nav-links a, .nav-links button').forEach(link => {
     link.addEventListener('click', () => {
         menuToggle.classList.remove('active');
         navLinks.classList.remove('active');
@@ -935,7 +939,12 @@ const initNetlifyIdentityWidget = () => {
     const userEmail = document.getElementById('identity-user-email');
     const dashboardLogoutBtn = document.getElementById('dashboard-logout-btn');
     const dashboardUserEmail = document.getElementById('dashboard-user-email');
-    const navLoginLinks = document.querySelectorAll('nav .nav-links .mobile-login-button');
+    const navLoginLinks = Array.from(document.querySelectorAll('nav .nav-links [data-auth-action="login"]'));
+    const navLogoutButtons = Array.from(document.querySelectorAll('nav .nav-links [data-auth-action="logout"]'));
+    const useLegacyNavLinks = navLogoutButtons.length === 0;
+    const legacyNavLinks = useLegacyNavLinks
+        ? (navLoginLinks.length ? navLoginLinks : Array.from(document.querySelectorAll('nav .nav-links .mobile-login-button')))
+        : [];
     const defaultPortalHref = buildPortalLoginUrl('client');
     const employeePortalHref = buildPortalLoginUrl('employee');
     const isOnClientDashboard = (path) => {
@@ -962,22 +971,44 @@ const initNetlifyIdentityWidget = () => {
         EMPLOYEE_PORTAL_HTML_PATH
     ];
 
-    navLoginLinks.forEach((link) => {
-        if (link && !link.dataset.defaultText) {
-            link.dataset.defaultText = link.textContent.trim() || 'Login';
-        }
-        if (link && !link.dataset.defaultHref) {
-            const href = link.getAttribute('href');
-            const resolvedHref = (href && href !== '#') ? href : defaultPortalHref;
-            link.dataset.defaultHref = resolvedHref;
-            if (href === 'login.html' || href === '/login.html') {
-                link.setAttribute('href', defaultPortalHref);
+    const primeNavLoginLinks = (links) => {
+        links.forEach((link) => {
+            if (!link) return;
+            if (!link.dataset.defaultText) {
+                link.dataset.defaultText = link.textContent.trim() || 'Login';
             }
-        }
-        if (link && !link.dataset.defaultDisplay) {
-            link.dataset.defaultDisplay = link.style.display || '';
-        }
-    });
+            if (!link.dataset.defaultHref) {
+                const href = link.getAttribute('href');
+                const resolvedHref = (href && href !== '#') ? href : defaultPortalHref;
+                link.dataset.defaultHref = resolvedHref;
+                if (href === 'login.html' || href === '/login.html') {
+                    link.setAttribute('href', defaultPortalHref);
+                }
+            }
+            if (!link.dataset.defaultDisplay) {
+                link.dataset.defaultDisplay = link.style.display || '';
+            }
+        });
+    };
+
+    if (useLegacyNavLinks) {
+        primeNavLoginLinks(legacyNavLinks);
+    } else {
+        primeNavLoginLinks(navLoginLinks);
+    }
+
+    const wireNavLogoutButtons = () => {
+        navLogoutButtons.forEach((button) => {
+            if (!button || button.dataset.logoutAttached === 'true') return;
+            button.dataset.logoutAttached = 'true';
+            button.addEventListener('click', (event) => {
+                event.preventDefault();
+                netlifyIdentity.logout();
+            });
+        });
+    };
+
+    wireNavLogoutButtons();
 
     const getIdentityDisplayName = (user) => {
         if (!user) return '';
@@ -991,19 +1022,39 @@ const initNetlifyIdentityWidget = () => {
 
     const updateNavLoginLinks = (user) => {
         const displayName = getIdentityDisplayName(user);
+
+        if (useLegacyNavLinks) {
+            legacyNavLinks.forEach((link) => {
+                if (!link) return;
+                if (user) {
+                    link.style.display = link.dataset.defaultDisplay || '';
+                    link.textContent = 'Logout';
+                    link.classList.add('nav-logout-link');
+                    link.removeAttribute('href');
+                    link.onclick = (event) => {
+                        event.preventDefault();
+                        netlifyIdentity.logout();
+                    };
+                    link.setAttribute('role', 'button');
+                    link.setAttribute('aria-label', displayName ? `Logout ${displayName}` : 'Logout');
+                } else {
+                    link.style.display = link.dataset.defaultDisplay || '';
+                    link.textContent = link.dataset.defaultText || 'Login';
+                    link.classList.remove('nav-logout-link');
+                    const defaultHref = link.dataset.defaultHref || defaultPortalHref;
+                    link.setAttribute('href', defaultHref);
+                    link.onclick = null;
+                    link.removeAttribute('role');
+                    link.removeAttribute('aria-label');
+                }
+            });
+            return;
+        }
+
         navLoginLinks.forEach((link) => {
             if (!link) return;
             if (user) {
-                link.style.display = link.dataset.defaultDisplay || '';
-                link.textContent = 'Logout';
-                link.classList.add('nav-logout-link');
-                link.removeAttribute('href');
-                link.onclick = (event) => {
-                    event.preventDefault();
-                    netlifyIdentity.logout();
-                };
-                link.setAttribute('role', 'button');
-                link.setAttribute('aria-label', displayName ? `Logout ${displayName}` : 'Logout');
+                link.style.display = 'none';
             } else {
                 link.style.display = link.dataset.defaultDisplay || '';
                 link.textContent = link.dataset.defaultText || 'Login';
@@ -1013,6 +1064,17 @@ const initNetlifyIdentityWidget = () => {
                 link.onclick = null;
                 link.removeAttribute('role');
                 link.removeAttribute('aria-label');
+            }
+        });
+
+        navLogoutButtons.forEach((button) => {
+            if (!button) return;
+            if (user) {
+                button.style.display = 'inline-flex';
+                button.setAttribute('aria-label', displayName ? `Logout ${displayName}` : 'Logout');
+            } else {
+                button.style.display = 'none';
+                button.removeAttribute('aria-label');
             }
         });
     };
